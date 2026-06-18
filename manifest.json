@@ -1,0 +1,16 @@
+{
+  "name": "Orba Console",
+  "short_name": "Orba",
+  "description": "Browser control surface for the Artiphon Orba over USB or Bluetooth.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#111316",
+  "theme_color": "#111316",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

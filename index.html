@@ -1,0 +1,2819 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#111316">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Orba">
+  <title>Orba Console</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="favicon.ico" sizes="48x48">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #111316;
+      --panel: #1b1f24;
+      --panel-2: #242a31;
+      --line: #353d46;
+      --text: #f1f4f7;
+      --muted: #9aa6b2;
+      --accent: #35c2a1;
+      --accent-2: #e9b44c;
+      --danger: #ff6b6b;
+      --ok: #7bd88f;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 15px/1.3 system-ui, -apple-system, "Segoe UI", sans-serif;
+      overscroll-behavior: none;
+    }
+    .app {
+      height: 100dvh;
+      max-width: 560px;
+      margin: 0 auto;
+      padding: calc(env(safe-area-inset-top) + 8px) 10px calc(env(safe-area-inset-bottom) + 8px);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow-y: auto;   /* this app outgrew one screen, so scroll, never clip */
+      overflow-x: hidden;
+    }
+    /* touch: long-press is a GESTURE here (solo, clear, metronome), never text selection */
+    button, select, canvas, .lane, .part, .pill, .keychip, .seqbar, h1, .lab, .k, .v {
+      -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+    }
+    button { touch-action: manipulation; }
+    input, textarea { -webkit-user-select: text; user-select: text; }
+
+    /* top bar */
+    .bar { display: flex; align-items: center; gap: 8px; }
+    .bar h1 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: .2px; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 12px; color: var(--muted);
+      border: 1px solid var(--line); border-radius: 20px; padding: 4px 10px; background: var(--panel);
+      max-width: 38%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); flex: 0 0 auto; }
+    .connected .dot { background: var(--ok); }
+
+    button, select {
+      font: inherit; color: var(--text);
+      border: 1px solid var(--line); border-radius: 10px;
+      background: var(--panel-2);
+    }
+    button { cursor: pointer; -webkit-appearance: none; }
+    button:active { transform: translateY(1px); }
+    button:disabled, select:disabled { opacity: .42; }
+    select {
+      width: 100%; min-height: 46px; padding: 6px 30px 6px 12px; background: #14181d;
+      background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+      background-position: right 14px center, right 9px center;
+      background-size: 5px 5px, 5px 5px; background-repeat: no-repeat;
+      -webkit-appearance: none; appearance: none;
+    }
+
+    .connect { min-height: 46px; padding: 0 14px; font-weight: 600;
+      background: color-mix(in srgb, var(--accent) 26%, var(--panel-2));
+      border-color: color-mix(in srgb, var(--accent) 60%, var(--line)); }
+    .connect.on { background: var(--panel-2); border-color: var(--line); font-weight: 400; color: var(--muted); }
+    .iconbtn { min-height: 46px; min-width: 46px; padding: 0 11px; font-size: 18px; flex: 0 0 auto; }
+    .keychip {
+      display: none; min-height: 46px; padding: 0 12px; font-size: 12px; flex: 0 0 auto;
+      border-radius: 20px; background: var(--panel); white-space: nowrap;
+    }
+    .keychip.show { display: inline-flex; align-items: center; }
+    .seqclock .bpm { cursor: pointer; }
+    .iconbtn.on { background: color-mix(in srgb, var(--accent-2) 30%, var(--panel-2)); border-color: color-mix(in srgb, var(--accent-2) 62%, var(--line)); }
+
+    /* part selector: the 4 buttons */
+    .parts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .part {
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+      min-height: 58px; padding: 6px 2px; line-height: 1.1;
+    }
+    .part .nm { font-weight: 600; font-size: 14px; }
+    .part .inst { font-size: 10px; color: var(--muted); max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .part.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 30%, var(--panel-2)); }
+    .part.active .inst { color: color-mix(in srgb, var(--accent) 30%, var(--text)); }
+    .part.solo { border-color: var(--accent-2); box-shadow: 0 0 0 1px var(--accent-2) inset; }
+    .part.solo .nm::after { content: " ◉"; color: var(--accent-2); font-size: 10px; }
+    .part.ducked { opacity: .45; }
+
+    /* settings overlay (mappings + routing) */
+    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: none; z-index: 10; }
+    .overlay.open { display: flex; align-items: flex-end; justify-content: center; }
+    .sheet {
+      width: 100%; max-width: 560px; max-height: 82dvh; overflow-y: auto;
+      background: var(--panel); border: 1px solid var(--line); border-radius: 14px 14px 0 0;
+      padding: 14px 12px calc(env(safe-area-inset-bottom) + 14px); display: grid; gap: 10px;
+    }
+    .sheet h2 { margin: 4px 0 0; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; }
+    .cfgmap > summary { margin: 4px 0; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; cursor: pointer; }
+    .cfgmap > *:not(summary) { margin-top: 8px; }
+    .doio-note { font-size: 11px; color: var(--muted); line-height: 1.4; }
+    .maptoggle { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+    #mapList, #devList { display: grid; }
+    .maprow, .devrow {
+      display: grid; grid-template-columns: 1fr 128px 26px 26px; gap: 8px; align-items: center;
+      padding: 6px 4px; border-bottom: 1px solid color-mix(in srgb, var(--line) 40%, transparent);
+      border-radius: 8px; transition: background .3s;
+    }
+    .maprow.ping { background: color-mix(in srgb, var(--accent) 17%, transparent); }
+    .learn { transition: border-color .3s, color .3s; }
+    .learn.ping { border-color: var(--accent); color: var(--accent); }
+    .maprow:last-child, .devrow:last-child { border-bottom: none; }
+    .devrow { grid-template-columns: 1fr 130px; }
+    .keycell { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .keycell input {
+      flex: 1 1 auto; min-width: 0; font: inherit; font-size: 14px; color: var(--text);
+      background: transparent; border: none; border-bottom: 1px dashed transparent; border-radius: 0; padding: 2px 0;
+    }
+    .keycell input:focus { outline: none; border-bottom-color: var(--accent); }
+    .keycell code {
+      flex: 0 0 auto; font-size: 10px; color: var(--muted);
+      background: var(--panel-2); border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px;
+    }
+    .maprow select, .devrow select {
+      min-height: 32px; padding: 2px 20px 2px 8px; font-size: 11.5px; color: var(--muted);
+      border-radius: 8px; background-position: right 8px center, right 4px center;
+    }
+    .maprow input[type=color] { width: 24px; height: 24px; border: none; border-radius: 50%; background: none; padding: 0; }
+    .maprow input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
+    .maprow input[type=color]::-webkit-color-swatch { border: 1px solid var(--line); border-radius: 50%; }
+    .maprow .del { min-height: 26px; min-width: 26px; padding: 0; border: none; background: none; color: var(--muted); font-size: 14px; }
+    .sheet .learn { min-height: 42px; }
+    /* note editor (per-track piano-roll: recorded vs snapped) */
+    .sheet.noteed { width: min(1280px, 99vw); max-width: none; height: 94dvh; max-height: 94dvh; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
+    .noteed-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .noteed-title { font-weight: 600; font-size: 13px; }
+    .noteed-snap, .noteed-tools { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+    .noteed-len { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; color: #8a93a3; }
+    .noteed-len select { font: inherit; background: #1a1e26; color: #cdd4df; border: 1px solid #333a45; border-radius: 5px; padding: 2px 4px; }
+    .noteed button.on { background: #2c8a4b; color: #fff; }
+    .noteed-zoom { margin-left: auto; display: inline-flex; gap: 4px; flex-wrap: wrap; }
+    #noteEdCanvas { width: 100%; flex: 1 1 auto; min-height: 0; height: auto; display: block; background: #0c0e12; border-radius: 8px; touch-action: none; margin-top: 8px; }
+    .noteed-foot { font-size: 11px; color: var(--muted); margin-top: 6px; }
+    .devrow .nm { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .liblist { display: grid; gap: 4px; max-height: 26dvh; overflow-y: auto; }
+    .liblist .librow { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 4px; }
+    .liblist .librow button { min-height: 40px; font-size: 13px; text-align: left; padding: 0 12px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .liblist .librow .delx { min-width: 40px; text-align: center; color: var(--muted); }
+    .liblist .librow .delx.confirm { color: var(--danger); border-color: var(--danger); }
+    .liblist .none { font-size: 12px; color: var(--muted); padding: 2px 6px; }
+    .dump { font: 10.5px ui-monospace, Menlo, monospace; color: var(--muted); white-space: pre-wrap; word-break: break-all; margin: 0; padding: 0 4px; min-height: 0; }
+    .dump:empty { display: none; }
+
+    .field { display: grid; gap: 3px; }
+    .field > .lab { font-size: 11px; color: var(--muted); padding-left: 2px; text-transform: uppercase; letter-spacing: .5px; }
+
+    /* transport */
+    .transport { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .transport button { min-height: 48px; font-size: 18px; }
+    .transport .rec.on { background: color-mix(in srgb, var(--danger) 42%, var(--panel-2)); border-color: var(--danger); }
+    .transport .clear { color: color-mix(in srgb, var(--danger) 70%, var(--text)); }
+
+    /* fx: collapsed to a summary line; expands for editing */
+    .fx { display: grid; gap: 5px; }
+    .fxsummary {
+      display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center;
+      min-height: 42px; padding: 0 12px; font-size: 13px; color: var(--muted); text-align: left;
+    }
+    .fxsummary .fxico { font-size: 14px; }
+    .fxsummary .chev { transition: transform .15s; }
+    .fx.open .chev { transform: rotate(180deg); }
+    .fxbody { display: none; gap: 4px; }
+    .fx.open .fxbody { display: grid; }
+    .fxrow { display: grid; grid-template-columns: 58px 1fr 42px; align-items: center; gap: 10px; }
+    .fxrow .k { font-size: 13px; color: var(--muted); }
+    .fxrow .v { font-size: 13px; text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+    input[type=range] { width: 100%; accent-color: var(--accent); height: 30px; }
+
+    /* presets row */
+    .presets { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr) auto auto; gap: 6px; }
+    .presets button { min-height: 46px; padding: 0 14px; font-size: 13px; }
+
+    /* sequencer / looper */
+    .seq { display: grid; gap: 5px; }
+    .seqbar { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto auto; gap: 6px; align-items: center; min-width: 0; }
+    .seqbar button { min-height: 44px; min-width: 48px; font-size: 16px; }
+    .seqbar .rec.on { background: color-mix(in srgb, var(--danger) 42%, var(--panel-2)); border-color: var(--danger); }
+    .seqbar .rec.armed { border-color: var(--danger); color: var(--danger); }
+    .seqbar .play.on { background: color-mix(in srgb, var(--ok) 25%, var(--panel-2)); border-color: var(--ok); }
+    .seqclock { text-align: center; font-variant-numeric: tabular-nums; line-height: 1.1; }
+    .seqclock .bpm { font-size: 17px; font-weight: 600; }
+    .seqclock .pos { font-size: 11px; color: var(--muted); }
+    .seqclock .bpm.beat { color: var(--accent-2); }
+    .seqbar select { min-height: 44px; width: 74px; padding: 4px 24px 4px 10px; font-size: 13px; }
+    .seqbar .met { font-size: 14px; }
+    .seqbar .met.off { opacity: .45; }
+    .lanes { display: grid; grid-template-columns: repeat(auto-fit, minmax(124px, 1fr)); gap: 6px; }
+    .lane {
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+      border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2);
+      padding: 5px 2px; font-size: 11px; color: var(--muted); line-height: 1.1;
+      min-width: 0;
+    }
+    .lane .st { font-size: 10px; }
+    .lane.has { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); color: var(--text); }
+    .lane.recing { border-color: var(--danger); }
+    .lane.recing .st { color: var(--danger); }
+    .lane .lanebtns { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; width: 100%; padding: 2px 4px 0; }
+    .lane .x {
+      min-height: 34px; min-width: 0; padding: 0 6px; font-size: 11px;
+      border: 1px solid var(--line); border-radius: 8px; background: var(--panel);
+      color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .lane .x.snapbtn { grid-column: 1 / -1; }
+    .lane .x.qon { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+    .lane .x.arm { opacity: .45; }
+    .lane .x.arm.on { color: color-mix(in srgb, var(--danger) 60%, var(--muted)); opacity: 1; }    /* armed, idle: quiet */
+    .lane.recing .x.arm.on { color: var(--danger); border-color: var(--danger); }                  /* recording: loud */
+    .lane .x:disabled { opacity: .25; }
+    .lane .grid { display: flex; gap: 1px; width: 100%; padding: 0 5px; }
+    .lane .grid i { flex: 1 1 0; height: 7px; border-radius: 2px; background: color-mix(in srgb, var(--line) 50%, transparent); }
+    .lane .grid i.b { margin-left: 3px; }                /* bar separators */
+    .lane .grid i.has { background: color-mix(in srgb, var(--accent) 80%, transparent); }
+    .lane .grid i.now { background: var(--accent-2); }
+
+    /* live note preview strips (one per MIDI source) */
+    .viz { display: grid; gap: 4px; }
+    .vizrow { display: grid; grid-template-columns: 56px 1fr; gap: 8px; align-items: center; }
+    .vizrow .nm { font-size: 10px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; }
+    .vizrow canvas { width: 100%; height: 36px; display: block; border: 1px solid color-mix(in srgb, var(--line) 60%, transparent); border-radius: 6px; background: #14181d; }
+    .customed { display: none; gap: 6px; }
+    .customed.show { display: grid; }
+    .customed canvas { width: 100%; height: 52px; display: block; border: 1px solid var(--line); border-radius: 6px; background: #14181d; touch-action: none; }
+    .customrow { display: grid; grid-template-columns: 1fr auto auto auto; gap: 6px; align-items: center; }
+    .customrow input { font: inherit; font-size: 13px; min-height: 38px; padding: 4px 10px; min-width: 0; color: var(--text); background: #14181d; border: 1px solid var(--line); border-radius: 8px; }
+    .customrow span { font-size: 11px; color: var(--muted); }
+    .customrow button { min-height: 38px; padding: 0 12px; font-size: 12px; }
+
+    .msg { font-size: 11px; color: var(--muted); font-family: ui-monospace, Menlo, monospace;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 14px; padding: 0 2px; }
+
+    .appfoot { text-align: center; font-size: 10px; opacity: .55; padding: 10px 0 4px; }
+    .appfoot a { color: var(--muted); text-decoration: none; }
+    .appfoot a:hover { color: var(--accent); }
+    section { display: grid; gap: 5px; }
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <div class="bar">
+      <h1>Orba Console</h1>
+      <button id="libChip" class="keychip show" title="Songs & presets">♬</button>
+      <button id="keyChip" class="keychip" title="Key & scale">—</button>
+      <button id="cfgBtn" class="iconbtn" title="Mappings & routing" aria-label="Settings">⚙</button>
+      <button id="midiBtn" class="iconbtn" title="MIDI keyboard → Orba" aria-label="MIDI keyboard input">🎹</button>
+      <span class="pill" id="status"><span class="dot"></span><span id="statusText">Off</span></span>
+      <button id="connectBtn" class="connect">Connect</button>
+    </div>
+
+    <div class="parts" id="parts">
+      <button class="part" data-part="0" disabled><span class="nm">Lead</span><span class="inst" data-inst="lead">—</span></button>
+      <button class="part" data-part="1" disabled><span class="nm">Chord</span><span class="inst" data-inst="chord">—</span></button>
+      <button class="part" data-part="2" disabled><span class="nm">Bass</span><span class="inst" data-inst="bass">—</span></button>
+      <button class="part" data-part="3" disabled><span class="nm">Drum</span><span class="inst" data-inst="drum">—</span></button>
+    </div>
+
+    <div class="fx" id="fx">
+      <button class="fxsummary" id="fxToggle">
+        <span class="fxico">🎚</span>
+        <span id="fxSum">—</span>
+        <span class="chev">▾</span>
+      </button>
+      <div class="fxbody">
+        <div class="field">
+          <span class="lab">Instrument · <span id="instLab">Lead</span></span>
+          <select id="instrSelect" disabled></select>
+        </div>
+        <div class="fxrow"><span class="k">Volume</span><input type="range" min="0" max="100" value="100" data-fx="volume" disabled><span class="v" data-fxv="volume">100%</span></div>
+        <div class="fxrow"><span class="k">Reverb</span><input type="range" min="0" max="100" value="0" data-fx="reverb" disabled><span class="v" data-fxv="reverb">0%</span></div>
+        <div class="fxrow"><span class="k">Delay</span><input type="range" min="0" max="100" value="0" data-fx="delay" disabled><span class="v" data-fxv="delay">0%</span></div>
+      </div>
+    </div>
+
+    <div class="transport">
+      <button id="playPauseBtn" disabled title="Orba play/pause (state unknown, alternates)">▶</button>
+      <button id="recBtn" class="rec" disabled>⏺</button>
+      <!-- device-looper clear intentionally hidden (ACTIONS.clear still mappable)
+      <button id="clearBtn" class="clear" disabled>🗑</button>
+      -->
+    </div>
+
+    <div class="seq">
+      <div class="seqbar">
+        <button id="seqPlay" class="play" title="play / stop">▶</button>
+        <button id="seqRec" class="rec" title="record into the active part (hold = clear it)">⏺</button>
+        <div class="seqclock"><div class="bpm" id="seqBpm">120</div><div class="pos" id="seqPos">—</div></div>
+        <select id="seqLen" title="loop length (beats)">
+          <option value="auto" selected>auto</option>
+          <option value="4">4</option><option value="8">8</option>
+          <option value="16">16</option><option value="32">32</option>
+        </select>
+        <button id="seqMet" class="met" title="tap = tap tempo · hold = click on/off">🔔</button>
+      </div>
+      <div class="lanes" id="seqLanes"></div>
+    </div>
+
+    <div class="viz" id="noteViz"></div>
+
+    <div class="msg" id="msg">BLE only. Tap Connect, pick the Orba.</div>
+    <footer class="appfoot"><a href="https://github.com/holofermes/orba-console" target="_blank" rel="noopener">source on GitHub</a></footer>
+  </div>
+
+  <div class="overlay" id="libOverlay">
+    <div class="sheet">
+      <h2>Orba songs</h2>
+      <div id="libSongs" class="liblist"></div>
+      <h2>Saved presets (ours)</h2>
+      <div id="libPresets" class="liblist"></div>
+      <div class="customrow">
+        <input id="presetNameIn" placeholder="save current as…" maxlength="24">
+        <button id="saveBtn">Save</button>
+      </div>
+      <button class="learn" id="libClose">Done</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="keyOverlay">
+    <div class="sheet">
+      <h2>Key & scale</h2>
+      <div class="devrow"><span class="nm">Root</span><select id="rootSel"></select></div>
+      <div class="devrow"><span class="nm">Scale</span><select id="scaleSel"></select></div>
+      <div class="customed" id="customEd">
+        <canvas id="customKb"></canvas>
+        <div class="customrow">
+          <input id="customName" placeholder="custom scale name" maxlength="16">
+          <span id="customCount">0/8</span>
+          <button id="customSave">Save</button>
+          <button id="customDel">Del</button>
+        </div>
+      </div>
+      <button class="learn" id="keyClose">Done</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="cfgOverlay">
+    <div class="sheet">
+      <details class="cfgmap">
+        <summary>Key mappings</summary>
+        <label class="maptoggle"><input type="checkbox" id="mapEnabled"> Enable key mappings</label>
+        <div class="presets">
+          <select id="mapPresetSel"><option value="">Mapping presets…</option></select>
+          <button id="mapPresetSave">Save</button>
+          <button id="mapPresetDel">Del</button>
+          <button id="mapExport">Export</button>
+          <button id="mapImport">Import</button>
+          <input type="file" id="mapImportFile" accept="application/json,.json" hidden>
+        </div>
+        <div id="mapList"></div>
+        <button class="learn" id="learnBtn">+ Learn a key…</button>
+        <p class="doio-note">LED and OLED control here is for the <a href="https://github.com/holofermes/orba-doio" target="_blank" rel="noopener">DOIO KB16</a> running the matching firmware.</p>
+      </details>
+      <h2>MIDI device → part</h2>
+      <div id="devList"></div>
+      <h2>Orba device</h2>
+      <div class="devrow"><span class="nm">MIDI mode</span>
+        <select id="orbaMidiMode">
+          <option value="0">Per-part</option>
+          <option value="1">MPE ⚠</option>
+          <option value="2">Single-ch ⚠</option>
+        </select></div>
+      <div class="devrow"><span class="nm">Pitch bend range</span>
+        <select id="orbaPb">
+          <option value="0">Off</option><option value="12">12 st</option>
+          <option value="24">24 st</option><option value="48">48 st</option>
+        </select></div>
+      <button class="learn" id="readFilesBtn">Read device files</button>
+      <pre id="deviceFilesDump" class="dump"></pre>
+      <button class="learn" id="cfgClose">Done</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="noteEdOverlay">
+    <div class="sheet noteed">
+      <div class="noteed-head">
+        <span class="noteed-title" id="noteEdTitle">Notes</span>
+        <span class="noteed-snap" id="noteEdSnap"></span>
+        <span class="noteed-tools">
+          <button class="x" id="noteEdStart" title="playhead back to start">⏮</button>
+          <button class="x" id="noteEdPlay" title="play / pause (Space)">▶</button>
+          <button class="x" id="noteEdSolo" title="solo this part">solo</button>
+          <button class="x on" id="noteEdDraw" title="draw: tap empty to add, drag a note to move, drag its right edge to resize">✏️</button>
+          <button class="x" id="noteEdErase" title="erase: tap a note to delete">🧽</button>
+          <button class="x" id="noteEdSelect" title="box-select: one drag, then turns itself off">▦</button>
+          <button class="x on" id="noteEdMagnet" title="snap edits to the 16th grid">⊞ snap</button>
+          <button class="x" id="noteEdAll" title="show all rows vs only rows with notes">rows</button>
+          <span class="noteed-len" title="this track's loop length (beats)">len<select id="noteEdLen"><option value="4">4</option><option value="8">8</option><option value="16">16</option><option value="32">32</option></select></span>
+          <button class="x" id="noteEdWinL" title="move the loop window back one bar">«</button>
+          <button class="x" id="noteEdWinR" title="move the loop window forward one bar">»</button>
+          <button class="x" id="noteEdUndo" title="undo" disabled>↶</button>
+          <button class="x" id="noteEdRedo" title="redo" disabled>↷</button>
+          <button class="x" id="noteEdDel" title="delete selected note (Del / Backspace)" disabled>🗑</button>
+        </span>
+        <span class="noteed-zoom">
+          <button class="x" id="noteEdZoomOut" title="zoom out">–</button>
+          <button class="x" id="noteEdZoomIn" title="zoom in">+</button>
+          <button class="x" id="noteEdFit" title="fit loop">fit</button>
+          <button class="x" id="noteEdClose">close</button>
+        </span>
+      </div>
+      <canvas id="noteEdCanvas"></canvas>
+      <div class="noteed-foot" id="noteEdFoot">○ recorded · ● snapped</div>
+    </div>
+  </div>
+
+  <script type="module">
+    /* ===================================================================
+       Orba control protocol, provided by the orba-protocol reference library.
+       The codec (CRC-16, 8<->7 codec, SysEx framing), BLE-MIDI packetization,
+       and the wire-affecting constants are IMPORTED from the orba-protocol
+       library, vendored from github.com/holofermes/orba-protocol.
+    =================================================================== */
+    import * as orba from "./orba-protocol/js/orba-protocol.js";
+
+    // Protocol constants come from the library (single source of truth).
+    const BLE_MIDI_SERVICE_UUID = orba.BLE_MIDI_SERVICE_UUID;
+    const BLE_MIDI_CHARACTERISTIC_UUID = orba.BLE_MIDI_CHARACTERISTIC_UUID;
+    // Chooser filtering. Filtering by the BLE-MIDI *service* is the spec-correct way
+    // to show only MIDI gear (BLE-MIDI peripherals advertise this service). Name
+    // prefixes are added as a belt-and-suspenders OR; the Orba's *advertised* name
+    // can differ from the GATT name Chrome shows after connecting, so a name-only
+    // filter can hide it entirely. If nothing matches, one more tap shows ALL devices.
+    const BLE_FILTERED = {
+      filters: [
+        { services: [BLE_MIDI_SERVICE_UUID] },
+        { namePrefix: "Orba" },
+        { namePrefix: "Artiphon" },
+      ],
+      optionalServices: [BLE_MIDI_SERVICE_UUID],
+    };
+    const BLE_ALL = { acceptAllDevices: true, optionalServices: [BLE_MIDI_SERVICE_UUID] };
+
+    // Wire-level constants, imported from the orba-protocol library.
+    const PARTS        = orba.PARTS;            // [{key,name,index,channel}] in part-index order
+    const SELECT_ADDRS = orba.SELECT_ADDRS;     // preset-select addresses per target
+    const NAME_ADDR    = orba.NAME_ADDRS;       // preset-name read addresses per target
+    const FX_KINDS     = ["volume", "reverb", "delay"];   // (app UI order; no pan slider)
+
+    // SysEx message-id counter and BLE-MIDI reassembly parser come from the library.
+    const nextMsgId = orba.createMsgIdCounter(0x60);
+    let bleParser = orba.createBleMidiParser();
+
+    const state = {
+      char: null, device: null,
+      part: 0,
+      recording: false,
+      library: null,
+      partFile: { lead: "", chord: "", bass: "", drum: "" },   // current preset filename per part
+      partName: { lead: "", chord: "", bass: "", drum: "" },   // current preset display name per part
+      fxCache: { lead:{}, chord:{}, bass:{}, drum:{} },         // last-known volume/reverb/delay % per part
+    };
+
+    const $ = sel => document.querySelector(sel);
+    const els = {
+      app: $("#app"), status: $("#status"), statusText: $("#statusText"),
+      connectBtn: $("#connectBtn"), midiBtn: $("#midiBtn"), parts: $("#parts"),
+      instrSelect: $("#instrSelect"), instLab: $("#instLab"), libSelect: $("#libSelect"),
+      playPauseBtn: $("#playPauseBtn"), recBtn: $("#recBtn"),
+
+      msg: $("#msg"),
+    };
+
+    function msg(t) { els.msg.textContent = t; }
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    const hex = bytes => Array.from(bytes, b => b.toString(16).padStart(2, "0")).join(" ");
+
+    /* ---- codec: provided by orba-protocol (codec/CRC/8<->7/framing live in the library) ---- */
+    const buildMessage  = payload => orba.buildCommand(payload, nextMsgId());  // payload -> SysEx bytes
+    const decodeMessage = orba.decodeMessage;   // SysEx bytes -> { msgId, payload, crc, crcOk } | null
+    const ascii         = orba.ascii;           // name reply bytes -> trimmed ASCII string
+
+    /* ---- BLE transport: packetization from the library; serialization stays here ---- */
+    const bleWrapMidiPackets = orba.bleWrapMidiPackets;
+    let bleSendChain = Promise.resolve();
+    function sendBleMidi(midiBytes) {
+      const op = bleSendChain.then(() => sendBleMidiNow(midiBytes), () => sendBleMidiNow(midiBytes));
+      bleSendChain = op.catch(() => {});
+      return op;
+    }
+    async function sendBleMidiNow(midiBytes) {
+      const c = state.char;
+      if (!c) return false;
+      const writeOne = c.writeValueWithoutResponse ? v => c.writeValueWithoutResponse(v) : v => c.writeValue(v);
+      for (const packet of bleWrapMidiPackets(midiBytes)) {
+        const value = new Uint8Array(packet);
+        try { await writeOne(value); }
+        catch (e) { await sleep(15); try { await writeOne(value); } catch (e2) { msg("BLE write failed"); return false; } }
+        await sleep(5);
+      }
+      return true;
+    }
+    function onBleMidiMessage(event) {
+      const value = new Uint8Array(event.target.value.buffer.slice(0));
+      for (const m of bleParser.feed(value)) onMidiBytes(m);   // BLE-MIDI reassembly is in the library parser
+    }
+
+    let bleShowAll = false;   // escalates to acceptAllDevices after an empty filtered chooser
+    async function connectBle() {
+      if (!navigator.bluetooth) { msg("Web Bluetooth is not available in this browser. Plug in over USB instead."); return; }
+      acquireWakeLock();   // user gesture, best chance to grab the screen lock
+      try {
+        msg(bleShowAll ? "Opening chooser (all devices)…" : "Opening chooser…");
+        let device;
+        try {
+          device = await navigator.bluetooth.requestDevice(bleShowAll ? BLE_ALL : BLE_FILTERED);
+        } catch (e) {
+          if (e && e.name === "NotFoundError") {
+            // empty list or cancelled. First time → offer the unfiltered list on the next tap.
+            if (!bleShowAll) { bleShowAll = true; msg("No Orba in the filtered list. Tap Connect again to show all devices."); }
+            else { msg("No device selected."); }
+            return;
+          }
+          throw e;
+        }
+        bleShowAll = false;
+        msg(`Connecting ${device.name || device.id}…`);
+        device.addEventListener("gattserverdisconnected", onBleDisconnected);
+        const server = await device.gatt.connect();
+        const service = await server.getPrimaryService(BLE_MIDI_SERVICE_UUID);
+        const characteristic = await service.getCharacteristic(BLE_MIDI_CHARACTERISTIC_UUID);
+        await characteristic.startNotifications();
+        characteristic.addEventListener("characteristicvaluechanged", onBleMidiMessage);
+        state.device = device; state.char = characteristic; bleParser.reset();
+        updateConnUI();
+        msg(`Connected (BLE): ${device.name || "Orba"}`);
+        readDeviceState();
+      } catch (e) { msg(`Connect failed: ${e.message || e}`); }
+    }
+    function onBleDisconnected() {
+      state.char = null; bleParser.reset(); updateConnUI(); msg("BLE disconnected.");
+    }
+
+    /* ---- transport router: send to the Orba over USB if it's cabled, else BLE ---- */
+    let usbOut = null, usbOuts = [], usbIn = null;   // Orba USB ports: usbOuts[i] drives part i; usbOut[0] for SysEx
+    let midiAccess = null, fwdMute = false; // Web MIDI access + 🎹 mute override
+    const fwdNotes = new Map();             // note -> channel it was sent on (clean note-offs across part switches)
+    const isOrbaPort = p => /orba/i.test((p.name || "") + (p.manufacturer || ""));
+    const isKb16Port = p => /kb16|doio/i.test((p.name || "") + (p.manufacturer || ""));
+    function orbaReady() { return !!usbOut || !!state.char; }
+    function sendToOrba(bytes) {
+      if (usbOut) { try { usbOut.send(bytes); } catch (e) { msg("USB send failed (allow MIDI access?)"); } return true; }
+      if (state.char) { sendBleMidi(bytes); return true; }
+      return false;
+    }
+    async function sendPayload(payload, label) {
+      if (!orbaReady()) { msg(navigator.bluetooth ? "No Orba yet. Plug in over USB, or tap Connect for Bluetooth." : "No Orba yet. Plug it in over USB."); return; }
+      sendToOrba(buildMessage(payload));
+    }
+    async function sendSelector(kind, filename) {
+      if (!SELECT_ADDRS[kind] || !filename) return;
+      const [select, commit] = orba.selectPreset(kind, filename);   // builder pads the 129-byte name + commit
+      await sendPayload(select, `select ${kind}`);
+      if (commit) await sendPayload(commit, `commit ${kind}`);
+    }
+
+    /* ===================================================================
+       Device state read-back + UI sync (the "stay up to date" requirement)
+    =================================================================== */
+    function onMidiBytes(data) {
+      if (data[0] === 0xf0) {
+        const decoded = decodeMessage(data);
+        if (decoded && decoded.crcOk) absorbReadReply(decoded.payload);
+        return;
+      }
+      // Program Change burst on all channels = something changed ON the device → resync
+      if ((data[0] & 0xf0) === 0xc0) { scheduleResync(); return; }
+      // the Orba transmits its own pad playing, recordable like any other input
+      const type = data[0] & 0xf0;
+      if (type >= 0x80 && type <= 0xe0) { noteViz.ingest("Orba", data); const lp = PARTS.findIndex(p => p.channel - 1 === (data[0] & 0x0f)); if (lp >= 0) noteEd.liveInput(lp, data); }
+      if ((seqEngine.recording || seqEngine.preroll) && type >= 0x80 && type <= 0xe0) {
+        const part = PARTS.findIndex(p => p.channel - 1 === (data[0] & 0x0f));
+        if (part >= 0 && !maybeKickRecord(data, part) && seqEngine.recording) seqEngine.record(data, liveLoopTick(), part);
+      }
+    }
+
+    function absorbReadReply(payload) {
+      if (payload.length < 4) return;
+      const domain = payload[1];
+      const addr = (payload[2] << 8) | payload[3];
+      // active part (02 01 00 03 <part>)
+      if (domain === 0x01 && addr === 0x0003 && payload.length >= 5) { applyActivePart(payload[4] & 0x03); return; }
+      // instrument / song names (domain 03)
+      if (domain === 0x03 && payload.length >= 4) {
+        for (const [key, a] of Object.entries(NAME_ADDR)) {
+          if (a === addr) { applyName(key, ascii(payload.slice(4))); return; }
+        }
+      }
+      // device quantize is PER-PART: d07@03 Lead, 04 Chord, 05 Bass, 06 Drum
+      // (low byte = 3 + part index; 0 as-played / 1 grid / 2 groove). Device truth wins;
+      // it overrides any stale local lane setting and is persisted.
+      if (domain === 0x07 && addr >= 0x0003 && addr <= 0x0006 && payload.length >= 5) {
+        const pi = addr - 0x0003;                 // 0x03..0x06 -> part 0..3
+        const mode = payload[4] % 3;
+        seqEngine.setQuant(pi, mode);
+        laneSnapStore[PARTS[pi].key] = mode;
+        localStorage.setItem("orbaLaneSnap", JSON.stringify(laneSnapStore));
+        renderSeq();
+        return;
+      }
+      // tempo (02 07 00 07 <hi> <lo>): BPM*100; seed our clock without echoing back
+      if (domain === 0x07 && addr === 0x0007 && payload.length >= 6) {
+        const bpm = ((payload[4] << 8) | payload[5]) / 100;
+        if (bpm >= 40 && bpm <= 300) { seqClock.bpm = Math.round(bpm * 100) / 100; $("#seqBpm").textContent = fmtBpm(); }
+        return;
+      }
+      // key / scale / MIDI mode / pitch bend (domain 03)
+      if (domain === 0x03 && addr === 0x0012 && payload.length >= 5) { orbaCtx.root = ((payload[4] << 24 >> 24) % 12 + 12) % 12; renderKeyChip(); return; }
+      if (domain === 0x03 && addr === 0x0013 && payload.length >= 5) {
+        // customs write label 0; don't let the echo demote our custom selection.
+        // Only adopt the device label when it differs from what WE wrote.
+        const expected = orbaCtx.scale != null && orbaCtx.scale >= SCALES.length ? 0 : orbaCtx.scale;
+        if (payload[4] !== expected) orbaCtx.scale = payload[4];
+        renderKeyChip();
+        return;
+      }
+      if (domain === 0x03 && addr === 0x000d && payload.length >= 5) {
+        orbaCtx.midiMode = payload[4];
+        if (orbaCtx.midiMode !== 0) {          // this app assumes per-part, so pin it
+          sendPayload(orba.setMidiMode(orba.MIDI_MODE.perPart), "pin midi mode");
+          orbaCtx.midiMode = 0;
+          msg("Orba MIDI mode restored to per-part (this app requires it)");
+        }
+        return;
+      }
+      if (domain === 0x03 && addr === 0x000e && payload.length >= 5) { orbaCtx.pbRange = payload[4]; return; }
+      // per-part FX reply (02 02 50 <param> <val>)
+      if (domain === 0x02 && payload[2] === 0x50 && payload.length >= 5) {
+        const param = payload[3], val = payload[4];
+        const part = (param & 0x18) >> 3;
+        const off = param & 0x07;
+        const kind = off === 0 ? "volume" : off === 2 ? "reverb" : off === 3 ? "delay" : null;
+        if (kind) {
+          const pct = Math.round(val / 255 * 100);
+          state.fxCache[PARTS[part].key][kind] = pct;
+          scheduleRender();   // volumes feed solo deduction; sliders repaint too
+        }
+      }
+    }
+
+    function applyName(key, name) {
+      if (!name) return;
+      if (key === "song") return;   // current song no longer mirrored in a dropdown
+      state.partName[key] = name;
+      updateFxSummary();
+      // reflect on the part button
+      const inst = document.querySelector(`[data-inst="${key}"]`);
+      if (inst) inst.textContent = name;
+      // map name → filename via library (so saved presets know the file)
+      const lib = state.library?.presets?.[key] || [];
+      const hit = lib.find(p => (p.name || "").trim().toLowerCase() === name.trim().toLowerCase());
+      if (hit) state.partFile[key] = hit.filename;
+      // if it's the active part, reflect in the dropdown
+      if (PARTS[state.part].key === key) selectByName(els.instrSelect, name);
+    }
+    function selectByName(select, name) {
+      const want = name.trim().toLowerCase();
+      const opt = Array.from(select.options).find(o => (o.dataset.name || "").trim().toLowerCase() === want);
+      if (opt && select.value !== opt.value) select.value = opt.value;
+    }
+
+    /* ---- device musical context (key/scale/tempo/midi-mode/pb), device truth ---- */
+    const ROOTS  = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    const SCALES = ["Major", "Nat Minor", "Harm Minor", "Mel Minor", "Maj Penta", "Min Penta",
+                    "Dorian", "Phrygian", "Lydian", "Mixolydian", "Locrian"];
+    const orbaCtx = { root: null, scale: null, midiMode: null, pbRange: null };
+    // 7-note interval sets (Orba 2 scale enum order); pentatonic scales are 5-note.
+    const SCALE_IVALS = [
+      [0,2,4,5,7,9,11],   // Major
+      [0,2,3,5,7,8,10],   // Nat Minor
+      [0,2,3,5,7,8,11],   // Harm Minor
+      [0,2,3,5,7,9,11],   // Mel Minor
+      [0,2,4,7,9],        // Maj Penta
+      [0,3,5,7,10],       // Min Penta
+      [0,2,3,5,7,9,10],   // Dorian
+      [0,1,3,5,7,8,10],   // Phrygian
+      [0,2,4,6,7,9,11],   // Lydian
+      [0,2,4,5,7,9,10],   // Mixolydian
+      [0,1,3,5,6,8,10],   // Locrian
+    ];
+    /* custom scales: user-picked interval sets (page truth, localStorage).
+       Indices >= SCALES.length are customs; the device's scale LABEL register
+       only knows 0-10, so customs write label 0; the pad note tables are what
+       actually matter. */
+    let customScales = {};
+    try { customScales = JSON.parse(localStorage.getItem("orbaCustomScales")) || {}; } catch {}
+    const saveCustomScales = () => localStorage.setItem("orbaCustomScales", JSON.stringify(customScales));
+    const customNames = () => Object.keys(customScales);
+    const scaleCount = () => SCALES.length + customNames().length;
+    const scaleName  = i => i < SCALES.length ? SCALES[i] : (customNames()[i - SCALES.length] ?? "?");
+    const scaleIvals = i => i < SCALES.length ? SCALE_IVALS[i] : (customScales[customNames()[i - SCALES.length]] || [0]);
+    // restore the page's scale selection (customs can't live in the device's
+    // label register, so the page remembers what IT last set)
+    try {
+      const sel = JSON.parse(localStorage.getItem("orbaScaleSel"));
+      if (sel?.custom && customScales[sel.name] != null) orbaCtx.scale = SCALES.length + customNames().indexOf(sel.name);
+    } catch {}
+
+    // pad table for a part: base + root + scale degrees, wrapping by octave to fill 8 pads
+    function padTable(base, root, ivals, penta) {
+      const set = penta && ivals.length === 7
+        ? (ivals[2] === 4 ? [ivals[0], ivals[1], ivals[2], ivals[4], ivals[5]]   // major-third → drop 4 & 7
+                          : [ivals[0], ivals[2], ivals[3], ivals[4], ivals[6]])  // minor-third → drop 2 & 6
+        : ivals;
+      const n = set.length, out = [];
+      for (let i = 0; i < 8; i++) out.push((base + root + set[i % n] + 12 * Math.floor(i / n)) & 0x7f);
+      return out;
+    }
+    // Setting key/scale = label registers (0x12/0x13) + per-part note tables that
+    // actually remap the pads (the registers alone do NOTHING, confirmed empirically).
+    // 0x08 = lead (base 60, pentatonic) · 0x09/0x0a = chord/bass (base 48, diatonic).
+    function pushScaleToOrba(root, scale) {
+      const iv = scaleIvals(scale);
+      const builtin = scale < SCALES.length;
+      sendPayload(orba.setKey(root), "key");
+      sendPayload(orba.setScale(builtin ? scale : 0), "scale");
+      const tables = [
+        [0x08, padTable(60, root, iv, builtin)],   // customs go to the lead AS PICKED, no penta thinning
+        [0x09, padTable(48, root, iv, false)],
+        [0x0a, padTable(48, root, iv, false)],
+      ];
+      for (const [addr, notes] of tables) {
+        sendPayload(orba.setScaleInterval(addr, notes), "scale table");
+        sendPayload(orba.applyScale(), "apply scale");
+      }
+    }
+    function renderKeyChip() {
+      const chip = $("#keyChip");
+      const known = orbaCtx.root != null && orbaCtx.scale != null;
+      chip.classList.toggle("show", known);
+      if (known) chip.textContent = `${ROOTS[((orbaCtx.root % 12) + 12) % 12]} · ${scaleName(orbaCtx.scale)}`;
+    }
+    function setOrbaKey(root, scale) {
+      if (root != null) orbaCtx.root = ((root % 12) + 12) % 12;
+      if (scale != null) orbaCtx.scale = ((scale % scaleCount()) + scaleCount()) % scaleCount();
+      pushScaleToOrba(orbaCtx.root ?? 0, orbaCtx.scale ?? 0);   // label + note tables (tables are what move the pads)
+      localStorage.setItem("orbaScaleSel", JSON.stringify({ name: scaleName(orbaCtx.scale ?? 0), custom: (orbaCtx.scale ?? 0) >= SCALES.length }));
+      renderKeyChip();
+      kb16FlashOled(`${ROOTS[orbaCtx.root ?? 0]} ${scaleName(orbaCtx.scale ?? 0)}`, "key / scale");
+      msg(`${ROOTS[orbaCtx.root ?? 0]} ${scaleName(orbaCtx.scale ?? 0)}`);
+    }
+    const stepKey   = d => setOrbaKey((orbaCtx.root ?? 0) + d, null);
+    const stepScale = d => setOrbaKey(null, (orbaCtx.scale ?? 0) + d);
+
+    function readDeviceState() {
+      sendPayload(orba.getActivePart(), "get part");      // → applyActivePart
+      scheduleNamesRead(450);
+      readAllFx();    // all 4 parts' volumes/fx, needed so solo can be DEDUCED, not remembered
+      for (let p = 0; p < 4; p++) sendPayload(orba.getQuantize(p), "get quantize");   // per-part device truth (all 4 lanes)
+      sendPayload(orba.getTempo(), "get tempo");      // seed our clock from the device BPM
+      sendPayload(orba.getKey(), "get key");
+      sendPayload(orba.getScale(), "get scale");
+      sendPayload(orba.getMidiMode(), "get midi mode");  // → pinned to per-part if drifted
+      sendPayload(orba.getPitchBendRange(), "get pb range");
+    }
+    function readAllFx() { for (let p = 0; p < 4; p++) readPartFx(p); }
+
+    /* ===================================================================
+       Derived + rendered state.
+       Truth model: the Orba owns part/FX/names (always re-queried, never
+       trusted from memory); solo is DEDUCED from volumes (exactly one part
+       audible, three at 0); the page owns only mappings/routing (localStorage).
+       render() repaints every surface idempotently; call it after any state
+       change AND whenever a device (re)appears, so feedback is never stale.
+    =================================================================== */
+    function soloIdx() {
+      const vols = PARTS.map(p => state.fxCache[p.key].volume);
+      if (vols.some(v => typeof v !== "number")) return null;   // not fully known yet
+      const audible = vols.map((v, i) => [v, i]).filter(([v]) => v > 0);
+      return audible.length === 1 ? audible[0][1] : null;
+    }
+    function render() {
+      const solo = soloIdx();
+      const volsKnown = PARTS.every(p => typeof state.fxCache[p.key].volume === "number");
+      for (const b of els.parts.querySelectorAll("button")) {
+        const p = Number(b.dataset.part);
+        b.classList.toggle("active", p === state.part);
+        b.classList.toggle("solo", solo === p);
+        b.classList.toggle("ducked", volsKnown && state.fxCache[PARTS[p].key].volume === 0);
+      }
+      els.instLab.textContent = PARTS[state.part].name;
+      const key = PARTS[state.part].key;
+      for (const kind of FX_KINDS) setFxSlider(kind, state.fxCache[key][kind] ?? (kind === "volume" ? 100 : 0));
+      renderKb16();
+    }
+    let renderTimer = null;
+    function scheduleRender() {            // collapse reply bursts (12 FX reads on connect)
+      if (renderTimer) return;
+      renderTimer = setTimeout(() => { renderTimer = null; render(); }, 60);
+    }
+    let namesTimer = null;
+    function scheduleNamesRead(delay = 500) {
+      clearTimeout(namesTimer);
+      namesTimer = setTimeout(() => { for (const key of Object.keys(NAME_ADDR)) sendPayload(orba.getName(key), "get name"); }, delay);
+    }
+    let resyncTimer = null;
+    function scheduleResync() { if (!orbaReady()) return; clearTimeout(resyncTimer); resyncTimer = setTimeout(readDeviceState, 450); }
+
+    function readPartFx(part) {
+      for (const kind of FX_KINDS) sendPayload(orba.getFx(part, kind), `get fx`);
+    }
+
+    /* ===================================================================
+       UI actions
+    =================================================================== */
+    // Reflect the live connection: prefer USB (auto) over BLE (tap-to-connect).
+    function updateConnUI() {
+      const usb = !!usbOut, ble = !!state.char, on = usb || ble;
+      els.status.classList.toggle("connected", on);
+      els.app.classList.toggle("connected", on);
+      els.statusText.textContent = usb ? "Orba: USB" : ble ? ("BLE: " + (state.device?.name || "Orba")) : "Off";
+      els.connectBtn.style.display = (usb || !navigator.bluetooth) ? "none" : "";   // hide Connect on USB, or when the browser has no Web Bluetooth
+      els.connectBtn.textContent = ble ? "Connected" : "Connect";
+      els.connectBtn.classList.toggle("on", ble);
+      // 🎹 = status light: lit when a keyboard is present and forwarding live
+      const kbd = Array.from(midiAccess?.inputs.values() || []).filter(p => !isOrbaPort(p) && !isKb16Port(p));
+      els.midiBtn.classList.toggle("on", kbd.length > 0 && !fwdMute && on);
+      els.midiBtn.title = !kbd.length ? "No MIDI keyboard detected"
+        : fwdMute ? "Keyboard muted, tap to enable"
+        : "Auto-forwarding: " + kbd.map(p => p.name).join(", ");
+      // controls live whenever the Orba is reachable (USB or BLE)
+      const ctrls = [els.instrSelect, els.playPauseBtn, els.recBtn,
+        ...els.parts.querySelectorAll("button"), ...document.querySelectorAll("input[data-fx]")];
+      for (const c of ctrls) c.disabled = !on;
+    }
+
+    function selectPart(part) {
+      state.part = part;
+      populateInstruments(PARTS[part].key);
+      render();
+      if (orbaReady()) { sendPayload(orba.setActivePart(part), "set part"); readPartFx(part); }
+    }
+    function applyActivePart(part) {
+      // device told us the active part; reflect without echoing a SET back
+      state.part = part;
+      populateInstruments(PARTS[part].key);
+      render();
+      readPartFx(part);
+    }
+
+    function populateInstruments(key) {
+      const items = state.library?.presets?.[key] || [];
+      els.instrSelect.innerHTML = "";
+      for (const it of items) {
+        const o = document.createElement("option");
+        o.value = it.filename; o.dataset.name = it.name || ""; o.textContent = it.name || it.filename;
+        els.instrSelect.append(o);
+      }
+      // select current
+      if (state.partName[key]) selectByName(els.instrSelect, state.partName[key]);
+      else if (state.partFile[key]) els.instrSelect.value = state.partFile[key];
+    }
+
+    async function setPreset(key, filename, name) {
+      if (!filename) return;
+      const partIdx = PARTS.findIndex(p => p.key === key);
+      const wasSilent = state.fxCache[key].volume === 0;
+      const stashKind = soloIdx() !== null && soloIdx() !== partIdx ? "solo" : "mute";
+      state.partFile[key] = filename;
+      if (name) { state.partName[key] = name; const inst = document.querySelector(`[data-inst="${key}"]`); if (inst) inst.textContent = name; }
+      await sendSelector(key, filename);
+      scheduleNamesRead(650);
+      setTimeout(() => { if (PARTS[state.part].key === key) readPartFx(state.part); }, 900);   // new voice resets fx
+      if (wasSilent) setTimeout(() => repairSilencedPart(partIdx, stashKind), 1100);           // keep staged sounds silent
+    }
+
+    async function loadSong(filename) {
+      const song = state.library?.songs.find(s => s.filename === filename);
+      if (!song) return;
+      msg(`Song: ${song.name}`);
+      await sendSelector("song", filename);
+      await sleep(110);
+      const refs = song.presets || {};
+      for (const key of ["drum", "bass", "chord", "lead"]) {
+        if (refs[key]?.filename) {
+          state.partFile[key] = refs[key].filename;
+          if (refs[key].name) state.partName[key] = refs[key].name;
+          await sendSelector(key, refs[key].filename);
+          await sleep(110);
+        }
+      }
+      scheduleNamesRead(800);
+    }
+
+    /* ---- FX ---- */
+    function setFxFor(part, kind, percent) {
+      state.fxCache[PARTS[part].key][kind] = percent;
+      sendPayload(orba.setFx(part, kind, percent), `fx ${kind}`);
+    }
+    function setFxSlider(kind, pct) {
+      const s = document.querySelector(`input[data-fx="${kind}"]`);
+      const v = document.querySelector(`[data-fxv="${kind}"]`);
+      if (s) s.value = pct;
+      if (v) v.textContent = pct + "%";
+      updateFxSummary();
+    }
+    function updateFxSummary() {
+      const get = k => document.querySelector(`input[data-fx="${k}"]`)?.value ?? "—";
+      const name = state.partName[PARTS[state.part].key] || PARTS[state.part].name;
+      $("#fxSum").textContent = `${name} · Vol ${get("volume")}% · Rev ${get("reverb")}% · Del ${get("delay")}%`;
+    }
+    const fxTimer = {}, fxPending = {};
+    function scheduleFx(kind, percent) {
+      fxPending[kind] = percent;
+      if (fxTimer[kind]) return;
+      fxTimer[kind] = setTimeout(() => { fxTimer[kind] = null; setFxFor(state.part, kind, fxPending[kind]); }, 70);
+    }
+    // Step a single FX (reverb/delay) up/down on the active part, for the macropad keys.
+    const FX_STEP = 5;   // % per key press
+    function nudgeFx(kind, delta) {
+      const slider = document.querySelector(`input[data-fx="${kind}"]`);
+      if (!slider) return;
+      const next = Math.max(0, Math.min(100, (Number(slider.value) || 0) + delta));
+      setFxSlider(kind, next);     // instant visual feedback
+      scheduleFx(kind, next);      // debounced send (collapses fast spins)
+      msg(`${PARTS[state.part].name} ${kind} ${next}%`);
+    }
+
+    /* ---- solo & mute ----
+       Both are DEDUCED from volumes, never stored: muted(p) = volume 0;
+       solo = the pattern "exactly three muted" (the audible part is soloed).
+       During a solo the ducked parts ARE muted; their mute keys light, like
+       implicit mutes on a console. Two stashes answer two different questions:
+       mute[p] = volume before *it* was muted; solo[p] = volume before *the
+       solo* (may be 0 if it was already muted, so un-solo preserves mutes).
+       Missing stash (new phone) → restore at 100. */
+    const VOL_STASH_KEY = "orbaVolStash";
+    function loadVolStash() {
+      try {
+        const s = JSON.parse(localStorage.getItem(VOL_STASH_KEY));
+        if (s) return { mute: s.mute || {}, solo: s.solo || {} };
+      } catch {}
+      let legacy = {};
+      try { legacy = JSON.parse(localStorage.getItem("orbaSoloStash")) || {}; } catch {}
+      return { mute: {}, solo: legacy };
+    }
+    const saveVolStash = s => localStorage.setItem(VOL_STASH_KEY, JSON.stringify(s));
+    const mutedIdx = p => state.fxCache[PARTS[p].key].volume === 0;
+
+    function unsolo(solo) {
+      const stash = loadVolStash();
+      for (let p = 0; p < 4; p++) if (p !== solo) setFxFor(p, "volume", stash.solo[PARTS[p].key] ?? 100);
+      stash.solo = {};
+      saveVolStash(stash);
+      msg(`Un-solo, everyone's back`);
+    }
+    function soloPart(part) {
+      const stash = loadVolStash();
+      // soloing a muted part means "hear it", so unmute it as part of the solo
+      if (state.fxCache[PARTS[part].key].volume === 0) {
+        setFxFor(part, "volume", stash.mute[PARTS[part].key] || 100);
+        delete stash.mute[PARTS[part].key];
+      }
+      for (let p = 0; p < 4; p++) {
+        if (p === part) continue;
+        stash.solo[PARTS[p].key] = state.fxCache[PARTS[p].key].volume ?? 100;
+        setFxFor(p, "volume", 0);
+      }
+      saveVolStash(stash);
+      msg(`SOLO ${PARTS[part].name}`);
+    }
+    function soloToggle(part = state.part) {
+      const solo = soloIdx();
+      if (solo === part) unsolo(solo);
+      else if (solo !== null) { unsolo(solo); soloPart(part); }   // move the solo
+      else soloPart(part);
+      render();
+    }
+    function muteToggle(part = state.part) {
+      const key = PARTS[part].key;
+      const vol = state.fxCache[key].volume;
+      if (typeof vol !== "number") { msg("Volumes not synced yet"); return; }
+      const stash = loadVolStash();
+      if (vol > 0) {
+        stash.mute[key] = vol;
+        saveVolStash(stash);
+        setFxFor(part, "volume", 0);
+        msg(`MUTE ${PARTS[part].name}`);
+      } else {
+        setFxFor(part, "volume", stash.mute[key] || 100);
+        delete stash.mute[key];
+        saveVolStash(stash);
+        msg(`Unmute ${PARTS[part].name}`);
+      }
+      render();
+    }
+    // A preset change RESETS that part's FX on the device (incl. volume). If the
+    // part was silent (muted, or ducked by a solo), learn the new kit's intended
+    // volume into the right stash, then re-silence it; staged sounds stay silent.
+    function repairSilencedPart(part, stashKind) {
+      sendPayload(orba.getFx(part, "volume"), "get vol");
+      setTimeout(() => {
+        const key = PARTS[part].key;
+        const vol = state.fxCache[key].volume;
+        if (typeof vol === "number" && vol > 0) {
+          const stash = loadVolStash();
+          stash[stashKind][key] = vol;
+          saveVolStash(stash);
+          setFxFor(part, "volume", 0);
+          render();
+        }
+      }, 500);
+    }
+
+    /* ---- transport ---- */
+    function transport(value, label) { sendPayload(orba.transport(value), label); }
+    function setRecording(on) { state.recording = on; els.recBtn.classList.toggle("on", on); }
+
+    /* ===================================================================
+       Saved presets: localStorage snapshots of the 4 instruments + FX
+    =================================================================== */
+    const LS_KEY = "orbaConsolePresets";
+    function loadPresetStore() { try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; } catch { return {}; } }
+    function savePresetStore(o) { localStorage.setItem(LS_KEY, JSON.stringify(o)); }
+    function buildLibLists() {
+      const songs = $("#libSongs"), presets = $("#libPresets");
+      songs.innerHTML = ""; presets.innerHTML = "";
+      for (const s of state.library?.songs || []) {
+        const row = document.createElement("div"); row.className = "librow";
+        const b = document.createElement("button");
+        b.textContent = s.name + (s.hasLoops ? " ◼" : "");
+        b.addEventListener("click", () => { loadSong(s.filename); $("#libOverlay").classList.remove("open"); });
+        row.append(b); songs.append(row);
+      }
+      if (!songs.children.length) songs.innerHTML = '<div class="none">no songs in the library</div>';
+      const store = loadPresetStore();
+      for (const name of Object.keys(store).sort()) {
+        const row = document.createElement("div"); row.className = "librow";
+        const b = document.createElement("button");
+        b.textContent = name;
+        b.addEventListener("click", () => { msg(`Loading "${name}"…`); applySnapshot(store[name]); $("#libOverlay").classList.remove("open"); });
+        const x = document.createElement("button");
+        x.className = "delx"; x.textContent = "✕";
+        x.addEventListener("click", () => {                 // two-tap delete, no popup
+          if (!x.classList.contains("confirm")) {
+            x.classList.add("confirm"); x.textContent = "✕?";
+            setTimeout(() => { x.classList.remove("confirm"); x.textContent = "✕"; }, 2000);
+            return;
+          }
+          const st = loadPresetStore(); delete st[name]; savePresetStore(st);
+          msg(`Deleted "${name}"`); buildLibLists();
+        });
+        row.append(b, x); presets.append(row);
+      }
+      if (!Object.keys(store).length) presets.innerHTML = '<div class="none">nothing saved yet</div>';
+    }
+
+    function snapshot() {
+      // instruments + FX only (no bpm/key/loops)
+      return {
+        parts: { ...state.partFile },
+        names: { ...state.partName },
+        fx: JSON.parse(JSON.stringify(state.fxCache)),
+      };
+    }
+    async function applySnapshot(snap) {
+      for (const key of ["drum", "bass", "chord", "lead"]) {
+        const file = snap.parts?.[key];
+        if (file) { await sendSelector(key, file); state.partFile[key] = file; if (snap.names?.[key]) state.partName[key] = snap.names[key]; await sleep(120); }
+      }
+      // FX can be set for any part regardless of active part (the param encodes the part)
+      for (let p = 0; p < 4; p++) {
+        const f = snap.fx?.[PARTS[p].key] || {};
+        for (const kind of FX_KINDS) if (typeof f[kind] === "number") { setFxFor(p, kind, f[kind]); await sleep(60); }
+      }
+      scheduleNamesRead(900);
+      setTimeout(() => readPartFx(state.part), 1100);
+    }
+
+    /* ===================================================================
+       Key mapping layer for the DOIO macropad.
+       To add a mapping just add  CODE: "actionName"  below. Actions are named
+       so a physical key, on-screen button, and saved macro all share one path.
+    =================================================================== */
+    /* ═══════════════════════════════════════════════════════════════
+       SEQUENCER ENGINE, PURE. No DOM, no MIDI, no audio, no wall-clock.
+       Integer ticks @ 96 PPQN; loop position wraps at loopLen. This fenced
+       object is designed to be portable: the host drives it with advance()
+       once per tick and record()/transport calls, and it answers with event
+       lists. Nothing in here may touch the platform.
+       ═══════════════════════════════════════════════════════════════ */
+    const PPQN = 96;
+    const BAR = 4 * PPQN;                       // 4/4 assumed
+    const SNAP_GRID = PPQN / 4;                 // 24 ticks = one 16th note
+
+    // The one place snap math lives, used by the playback rebuild AND the note editor,
+    // so the editor shows exactly what will play. quant: 0 off · 1 grid · 2 groove.
+    // groove ≈ snap to 16th + a small deterministic offset (stable per note across passes).
+    // (Firmware truth is +15 ticks on odd 16ths; this offset is tunable.)
+    function snapTick(tick, note, quant) {
+      if (!quant) return tick;
+      const snapped = Math.round(tick / SNAP_GRID) * SNAP_GRID;
+      if (quant === 1) return snapped;
+      return snapped + (((tick * 31 + note * 17) % 7) - 3);   // groove: ±3-tick deterministic
+    }
+    const seqEngine = {
+      loopLen: 16 * PPQN,                       // = the CYCLE (longest track); per-part lengths live on each part below
+      pos: 0,
+      running: false,
+      armed: false,
+      recording: false,
+      parts: [0, 1, 2, 3].map(() => ({ events: [], sched: null, quant: 0, loopLen: 16 * PPQN, loopStart: 0, openPlay: new Set(), openRec: new Set() })),
+
+      // quant: 0 = as played · 1 = grid (hard snap to 16ths) · 2 = groove.
+      // Groove per the official Orba 2 manual (v2.0.5 p.40): notes are
+      // "adjusted to the nearest 16th note, with just a touch of looseness or
+      // imprecision to give a slightly more human feeling". I.e. snap fully,
+      // then add a small jitter. Ours is deterministic per note (stable across
+      // loop passes) and non-destructive (the device's is baked at record time).
+      // Non-destructive: raw ticks stay; this is a playback view. A snapped
+      // note-on drags its note-off by the same delta so notes never invert.
+      _rebuild(p) {
+        p.sched = new Map();
+        const deltas = new Map();                // note -> delta applied to its note-on
+        const S = p.loopStart || 0, L = p.loopLen, E = S + L;   // loop window [S, S+L) sliding over the recorded content
+        const openK = new Set();                 // notes whose in-window note-on still awaits its off
+        const add = (k, ev) => { if (!p.sched.has(k)) p.sched.set(k, []); p.sched.get(k).push(ev); };
+        for (const ev of p.events) {
+          const type = ev.bytes[0] & 0xf0, note = ev.bytes[1];
+          let t = ev.tick;
+          if (p.quant) {
+            if (type === 0x90 && ev.bytes[2] > 0) {
+              const target = ev.manual ? ev.tick : snapTick(ev.tick, note, p.quant);   // pinned (hand-edited) notes ignore snap
+              deltas.set(note, target - t);
+              t = target;
+            } else if (type === 0x80 || (type === 0x90 && ev.bytes[2] === 0)) {
+              t += deltas.get(note) ?? 0;
+            }
+          }
+          const on = type === 0x90 && ev.bytes[2] > 0, off = type === 0x80 || (type === 0x90 && ev.bytes[2] === 0);
+          if (t >= S && t < E) {                 // inside the window: key relative to the window start
+            add(((t - S) % L + L) % L, ev);
+            if (on) openK.add(note); else if (off) openK.delete(note);
+          } else if (off && t >= E && openK.has(note)) {   // note runs past the window end → clamp its off to the loop end
+            add(L - 1, { bytes: [0x80, note, 0] }); openK.delete(note);
+          }
+        }
+        for (const note of openK) add(L - 1, { bytes: [0x80, note, 0] });   // any note still held at the window end → release it
+      },
+      setQuant(pi, mode) {
+        this.parts[pi].quant = mode % 3;
+        this._rebuild(this.parts[pi]);
+      },
+      _noteOffs(pi, set) {                      // pending note-offs for everything sounding
+        const offs = [...set].map(n => ({ part: pi, bytes: [0x80, n, 0] }));
+        set.clear();
+        return offs;
+      },
+
+      start() {
+        this.pos = 0;
+        for (const p of this.parts) this._rebuild(p);
+        this.running = true;
+      },
+      stop() {                                   // returns events to emit NOW (hanging note-offs)
+        const out = [];
+        if (this.recording) out.push(...this._recStop());
+        this.running = false; this.armed = false; this.preroll = false; this.firstTake = false;
+        this.parts.forEach((p, pi) => out.push(...this._noteOffs(pi, p.openPlay)));
+        return out;
+      },
+      armRecord() {                              // recording begins at the next bar boundary
+        if (!this.running) {
+          if (this.parts.every(p => p.events.length === 0)) { this.preroll = true; return; }  // blank slate: metronome rolls, first note = loop start
+          this.start(); this.recording = true;   // loops exist: hear them, record from beat 1
+          return;
+        }
+        this.armed = true;
+      },
+      preroll: false,                            // clock+click running, loop not yet started
+      firstTake: false,                          // auto-length: this take decides the loop length
+      recEnabled: [true, true, true, true],      // per-part record arm (all on by default)
+      _recStop() {                               // close the take: synth note-offs for held notes
+        for (const p of this.parts) {
+          for (const n of p.openRec) p.events.push({ tick: ((this.pos % p.loopLen) + p.loopLen) % p.loopLen, bytes: [0x80, n, 0] });
+          p.openRec.clear();
+        }
+        this.recording = false;
+        if (this.firstTake) { this._finalizeAutoLen(); this.firstTake = false; }
+        for (const p of this.parts) this._rebuild(p);
+        return [];
+      },
+      _finalizeAutoLen() {                       // take length climbs the visible loop-length ladder.
+        // Half-beat grace: a rec-press lands AFTER the musical end, so stopping
+        // at 4.3 beats still means a 4-beat loop, not an 8-beat one half empty.
+        const rawBeats = this.pos / PPQN;
+        const L = [4, 8, 16, 32].find(v => v >= rawBeats - 0.5) || 32;
+        for (const p of this.parts) p.loopLen = L * PPQN;   // first take sets the base length for ALL tracks
+        this._syncCycle();
+        this.pos = ((this.pos % this.loopLen) + this.loopLen) % this.loopLen;
+      },
+      recToggle() {                              // returns events to emit NOW
+        if (this.recording) return this._recStop();
+        this.armRecord();
+        return [];
+      },
+      record(bytes, atTick, part) {              // host passes the loop-relative live tick
+        if (!this.recording || !this.recEnabled[part]) return;
+        const p = this.parts[part];
+        const t = (p.loopStart || 0) + (((atTick % p.loopLen) + p.loopLen) % p.loopLen);   // recordings land inside the loop window
+        const type = bytes[0] & 0xf0;
+        if (type === 0x90 && bytes[2] > 0) p.openRec.add(bytes[1]);
+        if (type === 0x80 || (type === 0x90 && bytes[2] === 0)) p.openRec.delete(bytes[1]);
+        p.events.push({ tick: t, bytes: [...bytes] });
+      },
+      clearPart(pi) {                            // returns events to emit NOW
+        const p = this.parts[pi];
+        const out = this._noteOffs(pi, p.openPlay);
+        p.openRec.clear();
+        p.events = []; this._rebuild(p);
+        return out;
+      },
+      _syncCycle() {                             // cycle = longest track (lengths are powers of 2 → max == lcm → seamless wrap)
+        this.loopLen = Math.max(...this.parts.map(p => p.loopLen));
+        return this.loopLen;
+      },
+      setLoopBeats(beats) {                      // MASTER: set ALL tracks. NON-destructive (raw ticks kept;
+        for (const p of this.parts) p.loopLen = beats * PPQN;   // views re-fold: shrink wraps, grow leaves a silent tail).
+        this._syncCycle();
+        this.pos = ((this.pos % this.loopLen) + this.loopLen) % this.loopLen;
+        for (const p of this.parts) this._rebuild(p);
+        return [];
+      },
+      setPartBeats(pi, beats) {                  // PER-TRACK length (polymeter): only this track re-folds
+        this.parts[pi].loopLen = beats * PPQN;
+        this._syncCycle();
+        this.pos = ((this.pos % this.loopLen) + this.loopLen) % this.loopLen;
+        this._rebuild(this.parts[pi]);
+        return [];
+      },
+      setPartWindow(pi, startTick, lenTicks) {   // PER-TRACK loop window: start offset + length (UI keeps length power-of-two)
+        const p = this.parts[pi];
+        p.loopStart = Math.max(0, Math.round(startTick));
+        p.loopLen = lenTicks;
+        this._syncCycle();
+        this.pos = ((this.pos % this.loopLen) + this.loopLen) % this.loopLen;
+        this._rebuild(p);
+        return [];
+      },
+      advance() {                                // one tick; returns [{part, bytes}]
+        if (!this.running) return [];
+        if (this.preroll) return [];             // metronome rolls; the loop hasn't started
+        const out = [];
+        if (this.armed && this.pos % BAR === 0) { this.armed = false; this.recording = true; }
+        for (let pi = 0; pi < 4; pi++) {
+          const p = this.parts[pi];
+          for (const ev of p.sched.get(this.pos % p.loopLen) || []) {
+            const type = ev.bytes[0] & 0xf0;
+            if (type === 0x90 && ev.bytes[2] > 0) p.openPlay.add(ev.bytes[1]);
+            if (type === 0x80 || (type === 0x90 && ev.bytes[2] === 0)) p.openPlay.delete(ev.bytes[1]);
+            out.push({ part: pi, bytes: ev.bytes });
+          }
+        }
+        this.pos++;
+        if (this.pos >= this.loopLen) {
+          this.pos = 0;
+          if (this.recording) for (const p of this.parts) this._rebuild(p);   // fold fresh overdubs in
+        }
+        return out;
+      },
+      hasContent(pi) { return this.parts[pi].events.length > 0; },
+    };
+    /* ════════════════════ end of pure engine ════════════════════ */
+
+    /* ---- looper persistence: the working session survives reloads ---- */
+    const LOOPS_KEY = "orbaLoops";
+    function serializeLoops() {
+      return {
+        loopLen: seqEngine.loopLen,
+        parts: seqEngine.parts.map(p => ({ q: p.quant, len: p.loopLen, start: p.loopStart || 0, ev: p.events.map(e => [e.tick, ...e.bytes]) })),
+      };
+    }
+    function restoreLoops(data) {
+      if (!data || !Array.isArray(data.parts)) return;
+      const base = data.loopLen || 16 * PPQN;
+      data.parts.forEach((sp, i) => {
+        if (i > 3) return;
+        const p = seqEngine.parts[i];
+        p.quant = sp.q || 0;
+        p.loopLen = sp.len || base;
+        p.loopStart = sp.start || 0;
+        p.events = (sp.ev || []).map(a => ({ tick: a[0], bytes: a.slice(1) }));
+        seqEngine._rebuild(p);
+      });
+      seqEngine._syncCycle();
+      const uniform = seqEngine.parts.every(p => p.loopLen === seqEngine.parts[0].loopLen);
+      const lenOpt = String(seqEngine.parts[0].loopLen / PPQN);
+      const sel = $("#seqLen");
+      if (sel) sel.value = uniform && [...sel.options].some(o => o.value === lenOpt) ? lenOpt : "auto";
+    }
+    let loopsSaveTimer = null;
+    function persistLoops() {
+      clearTimeout(loopsSaveTimer);
+      loopsSaveTimer = setTimeout(() => { try { localStorage.setItem(LOOPS_KEY, JSON.stringify(serializeLoops())); } catch {} }, 400);
+    }
+    try { restoreLoops(JSON.parse(localStorage.getItem(LOOPS_KEY))); } catch {}
+
+    // Lane snap drives both layers: our browser looper rebuilds immediately,
+    // and the Orba's active-part quantize register is written with the same
+    // enum. Local storage survives reloads before device readback arrives.
+    let laneSnapStore = {};
+    try { laneSnapStore = JSON.parse(localStorage.getItem("orbaLaneSnap")) || {}; } catch {}
+    for (let pi = 0; pi < 4; pi++) if (laneSnapStore[PARTS[pi].key] != null) seqEngine.setQuant(pi, laneSnapStore[PARTS[pi].key]);
+    function setDeviceQuantize(part, mode) {
+      if (!orbaReady()) return;
+      sendPayload(orba.setQuantize(part, mode % 3), "quantize");   // per-part register; no active-part swap
+    }
+    function setLaneSnap(pi, mode) {
+      seqEngine.setQuant(pi, mode);
+      persistLoops();
+      laneSnapStore[PARTS[pi].key] = seqEngine.parts[pi].quant;
+      localStorage.setItem("orbaLaneSnap", JSON.stringify(laneSnapStore));
+      setDeviceQuantize(pi, seqEngine.parts[pi].quant);
+    }
+
+    /* ---- clock driver (browser): inline worker + look-ahead scheduler ----
+       "Tale of Two Clocks": a coarse worker timer (immune to Android tab
+       throttling) wakes every 25ms and schedules everything in the next
+       ~130ms window with absolute timestamps via output.send(bytes, ts). */
+    const seqClock = { bpm: 120, running: false, tick: 0, nextTickTime: 0, LOOKAHEAD: 130 };
+    const msPerTick = () => 60000 / (seqClock.bpm * PPQN);
+    const clockWorker = new Worker(URL.createObjectURL(new Blob(
+      ["let id=null;onmessage=e=>{if(e.data==='start'){if(!id)id=setInterval(()=>postMessage(0),25)}else{clearInterval(id);id=null}}"],
+      { type: "text/javascript" })));
+    clockWorker.onmessage = () => schedulerPass();
+
+    let actx = null;                             // AudioContext: created on first user gesture
+    let metOn = true;
+    function ensureAudio() { if (!actx) try { actx = new AudioContext(); } catch (e) {} actx?.resume?.(); }
+    function clickAt(whenMs, downbeat) {
+      if (!metOn || !actx) return;
+      const t = Math.max(actx.currentTime, actx.currentTime + (whenMs - performance.now()) / 1000);
+      const osc = actx.createOscillator(), g = actx.createGain();
+      osc.frequency.value = downbeat ? 1568 : 1047;
+      g.gain.setValueAtTime(0.32, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+      osc.connect(g).connect(actx.destination);
+      osc.start(t); osc.stop(t + 0.06);
+    }
+
+    // outputs that want MIDI wire clock (0xF8): other gear, not Orba/DOIO
+    const clockOuts = () => Array.from(midiAccess?.outputs.values() || []).filter(p => !isOrbaPort(p) && !isKb16Port(p));
+    function sendPartMidi(part, bytes, whenMs) {
+      const type = bytes[0] & 0xf0;
+      if (usbOut) {
+        const idx = Math.min(USB_PART_PORT[part] ?? part, usbOuts.length - 1);
+        (usbOuts[idx] || usbOut).send([type, ...bytes.slice(1)], whenMs);   // channel 1 per-port
+      } else if (state.char) {
+        sendBleMidi([type | (PARTS[part].channel - 1), ...bytes.slice(1)]); // BLE fallback, unscheduled
+      }
+    }
+
+    function schedulerPass() {
+      if (!seqClock.running) return;
+      const now = performance.now();
+      while (seqClock.nextTickTime < now + seqClock.LOOKAHEAD) {
+        const when = seqClock.nextTickTime;
+        for (const ev of seqEngine.advance()) sendPartMidi(ev.part, ev.bytes, when);
+        if (seqClock.tick % 4 === 0) for (const o of clockOuts()) { try { o.send([0xF8], when); } catch (e) {} }
+        if (seqClock.tick % PPQN === 0) onBeat(Math.floor(seqClock.tick / PPQN), when);
+        seqClock.tick++;
+        seqClock.nextTickTime += msPerTick();
+      }
+    }
+    function liveTick() {                        // engine-tick equivalent of "right now"
+      return Math.max(0, Math.round(seqClock.tick - (seqClock.nextTickTime - performance.now()) / msPerTick()));
+    }
+
+    let seqPlayheadTick = 0;                            // where playback starts (set by clicking in the editor when stopped)
+    function seqStart() {
+      ensureAudio();
+      seqEngine.start();
+      const startPos = ((Math.round(seqPlayheadTick) % seqEngine.loopLen) + seqEngine.loopLen) % seqEngine.loopLen;   // whole tick; pos must be integer or sched.get() never matches
+      seqEngine.pos = startPos;                         // start from the playhead, not always 0
+      seqClock.tick = startPos;
+      seqLoopBase = 0;
+      seqClock.nextTickTime = performance.now() + 15;   // tight: tick 0 ≈ "now" (first-note alignment)
+      seqClock.running = true;
+      clockWorker.postMessage("start");
+      for (const o of clockOuts()) { try { o.send([0xFA]); } catch (e) {} }
+      renderSeq();
+    }
+    function seqStop() {
+      seqClock.running = false;
+      clockWorker.postMessage("stop");
+      for (const ev of seqEngine.stop()) sendPartMidi(ev.part, ev.bytes);
+      for (const o of clockOuts()) { try { o.send([0xFC]); } catch (e) {} }
+      renderSeq(); renderKb16();
+    }
+    function seqPlayStop() {
+      if (!seqClock.running && ![0, 1, 2, 3].some(p => seqEngine.hasContent(p))) {
+        msg("nothing recorded, hit ⏺ and play something");
+        return;
+      }
+      seqClock.running ? seqStop() : seqStart();
+    }
+    let seqAutoLen = true;                                   // "auto" = Orba mode: first take decides length
+    let seqLoopBase = 0;                                     // absolute clock tick where loop-beat-1 lives
+    const liveLoopTick = () => liveTick() - seqLoopBase;
+    function seqRecTap() {
+      ensureAudio();
+      if (seqEngine.preroll) {                               // second tap while rolling = cancel
+        seqStop();
+        msg("record cancelled");
+      } else if (!seqClock.running && !seqEngine.recording) {
+        seqEngine.recToggle();
+        if (seqEngine.preroll) { seqStart(); msg("metronome rolling, your first note starts the loop"); }
+        else if (seqEngine.running) seqStart();              // loops exist: roll now
+      } else {
+        for (const ev of seqEngine.recToggle()) sendPartMidi(ev.part, ev.bytes);
+        if (!seqEngine.recording && seqAutoLen) msg(`loop: ${seqEngine.loopLen / PPQN} beats`);
+      }
+      persistLoops();
+      renderSeq(); renderKb16();
+    }
+    // blank-slate recording: metronome is rolling; the FIRST note-on (snapped to
+    // the nearest beat of that pulse) becomes the loop start
+    function maybeKickRecord(data, part) {
+      if (!seqEngine.preroll || part == null || part < 0 || !seqEngine.recEnabled[part]) return false;
+      if (!((data[0] & 0xf0) === 0x90 && data[2] > 0)) return false;
+      const LT = liveTick();
+      seqLoopBase = Math.round(LT / PPQN) * PPQN;            // loop beat 1 = nearest metronome beat
+      seqEngine.preroll = false;
+      seqEngine.recording = true;
+      if (seqAutoLen) { for (const p of seqEngine.parts) p.loopLen = 32 * PPQN; seqEngine._syncCycle(); seqEngine.firstTake = true; }   // cap; take decides
+      seqEngine.pos = ((seqClock.tick - seqLoopBase) % seqEngine.loopLen + seqEngine.loopLen) % seqEngine.loopLen;
+      seqEngine.record(data, Math.max(0, LT - seqLoopBase), part);
+      renderSeq(); renderKb16();
+      return true;
+    }
+    function seqRecHold() {                      // hold = clear the ACTIVE part's loop
+      for (const ev of seqEngine.clearPart(state.part)) sendPartMidi(ev.part, ev.bytes);
+      msg(`${PARTS[state.part].name} loop cleared`);
+      persistLoops();
+      renderSeq(); renderKb16();
+    }
+
+    /* tap tempo + click toggle (the metronome key / 🔔 button) */
+    let taps = [];
+    const fmtBpm = () => Number.isInteger(seqClock.bpm) ? String(seqClock.bpm) : seqClock.bpm.toFixed(1);
+    function setBpm(v) {
+      seqClock.bpm = Math.min(240, Math.max(40, Math.round(v * 100) / 100));   // 0.01 precision, same as the Orba's register
+      $("#seqBpm").textContent = fmtBpm();
+      clearTimeout(setBpm._t);                   // push tempo to the Orba (its delay tempo-syncs)
+      setBpm._t = setTimeout(() => {
+        if (orbaReady()) sendPayload(orba.setTempo(seqClock.bpm), "tempo");
+      }, 300);
+    }
+    function seqTapTempo() {
+      const now = performance.now();
+      if (taps.length && now - taps[taps.length - 1] > 2000) taps = [];
+      taps.push(now);
+      if (taps.length > 9) taps = taps.slice(-9);   // sliding window: follows you if you drift
+      if (taps.length >= 4) {
+        setBpm(60000 * (taps.length - 1) / (taps[taps.length - 1] - taps[0]));
+        if (seqClock.running) {
+          // phase-lock: shift the grid so the next beat lands on YOUR pulse
+          // (nearest alignment, never nudges more than half a beat)
+          const period = 60000 / seqClock.bpm;
+          const ticksToBeat = (PPQN - (seqClock.tick % PPQN)) % PPQN;
+          const predicted = seqClock.nextTickTime + ticksToBeat * msPerTick();
+          let delta = (predicted - taps[taps.length - 1]) % period;
+          if (delta < 0) delta += period;
+          seqClock.nextTickTime += delta <= period / 2 ? -delta : period - delta;
+        }
+      }
+      msg(taps.length < 4 ? `tap ${taps.length}…` : `tempo ${seqClock.bpm}, locked to your beat`);
+    }
+    function seqMetHold() {                      // hold = click sound on/off (LED keeps beating)
+      taps.pop();                                // that press was a hold, not a tap
+      metOn = !metOn;
+      if (metOn) ensureAudio();
+      msg(metOn ? "click on" : "click off");
+      renderSeq();
+    }
+
+    function onBeat(beatAbs, when) {
+      const pre = seqEngine.preroll;
+      // loop-relative beat comes from the ENGINE (the loop start may be rebased
+      // onto whichever metronome beat the first note landed near)
+      const beatInLoop = pre ? beatAbs % 4
+        : Math.floor(((seqEngine.pos - 1 + seqEngine.loopLen) % seqEngine.loopLen) / PPQN);
+      const downbeat = beatInLoop % 4 === 0;     // tick-tack-tack-tack: accent EVERY bar
+      clickAt(when, downbeat);
+      // DOIO: metronome key flashes the beat; armed rec key blinks, scheduled on the wire
+      const metLed = Object.values(mappings).find(m => m.action === "seqMetronome" && m.led != null)?.led;
+      const recLed = Object.values(mappings).find(m => m.action === "seqRecToggle" && m.led != null)?.led;
+      const sx = b => [0xF0, 0x7D, 0x4F, ...b, 0xF7];
+      try {
+        if (kb16Out && metLed != null) {
+          kb16Out.send(sx([0x01, metLed, ...(downbeat ? [127, 127, 127] : [60, 42, 0])]), when);
+          kb16Out.send(sx([0x02, metLed]), when + 100);
+        }
+        if (kb16Out && recLed != null && seqEngine.armed) {
+          kb16Out.send(sx([0x01, recLed, 127, 0, 0]), when);
+          kb16Out.send(sx([0x02, recLed]), when + 180);
+        }
+      } catch (e) {}
+      const dt = Math.max(0, when - performance.now());
+      setTimeout(() => {
+        $("#seqBpm").classList.add("beat");
+        $("#seqPos").textContent = !seqClock.running ? "—" : pre ? "…" : `${Math.floor(beatInLoop / 4) + 1}.${beatInLoop % 4 + 1}`;
+        setTimeout(() => $("#seqBpm").classList.remove("beat"), 90);
+        if (seqEngine.armed || seqEngine.recording) renderSeq();
+        updateSeqGrids(pre ? -1 : beatInLoop);
+      }, dt);
+    }
+
+    const seqGrids = [];
+    function updateSeqGrids(beatNow) {
+      const active = seqClock.running && beatNow >= 0;
+      for (let pi = 0; pi < 4; pi++) {
+        const cells = seqGrids[pi]?.children;
+        if (!cells) continue;
+        const p = seqEngine.parts[pi];
+        const laneNow = active ? Math.floor((((seqEngine.pos - 1) % p.loopLen + p.loopLen) % p.loopLen) / PPQN) : -1;   // per-track playhead (polymeter)
+        const occupied = new Set(p.events.map(ev => Math.floor((((ev.tick % p.loopLen) + p.loopLen) % p.loopLen) / PPQN)));
+        for (let b = 0; b < cells.length; b++) {
+          cells[b].classList.toggle("has", occupied.has(b));
+          cells[b].classList.toggle("now", active && b === laneNow);
+        }
+      }
+    }
+    function renderSeq() {
+      const play = $("#seqPlay");
+      play.classList.toggle("on", seqClock.running);
+      play.disabled = !seqClock.running && ![0, 1, 2, 3].some(p => seqEngine.hasContent(p));   // nothing to play
+      const rec = $("#seqRec");
+      rec.classList.toggle("on", seqEngine.recording);
+      rec.classList.toggle("armed", seqEngine.armed || seqEngine.preroll);
+      $("#seqMet").classList.toggle("off", !metOn);
+      $("#seqBpm").textContent = fmtBpm();
+      if (!seqClock.running) $("#seqPos").textContent = "—";
+      const lanes = $("#seqLanes");
+      lanes.innerHTML = "";
+      for (let pi = 0; pi < 4; pi++) {
+        const lane = document.createElement("div");
+        lane.className = "lane";
+        lane.classList.toggle("has", seqEngine.hasContent(pi));
+        const armable = seqEngine.recEnabled[pi];
+        lane.classList.toggle("recing", (seqEngine.recording || seqEngine.armed || seqEngine.preroll) && armable);
+        const st = seqEngine.preroll && armable ? "play to rec"
+                 : seqEngine.armed && armable ? "armed"
+                 : seqEngine.recording && armable ? "REC"
+                 : seqEngine.hasContent(pi) ? "●" : "○";
+        lane.innerHTML = `<span>${PARTS[pi].name}</span><span class="st">${st}</span>`;
+        const grid = document.createElement("div");
+        grid.className = "grid";
+        const beats = seqEngine.parts[pi].loopLen / PPQN;
+        for (let b = 0; b < beats; b++) {
+          const cell = document.createElement("i");
+          if (b && b % 4 === 0) cell.classList.add("b");
+          grid.append(cell);
+        }
+        lane.append(grid);
+        seqGrids[pi] = grid;
+        const row = document.createElement("div");
+        row.className = "lanebtns";
+        const q = document.createElement("button");
+        q.className = "x snapbtn";
+        q.textContent = ["snap: off", "snap: grid", "snap: groove"][seqEngine.parts[pi].quant];
+        q.classList.toggle("qon", seqEngine.parts[pi].quant > 0);
+        q.addEventListener("click", () => { setLaneSnap(pi, seqEngine.parts[pi].quant + 1); renderSeq(); });
+        const arm = document.createElement("button");
+        arm.className = "x arm";
+        arm.textContent = "⏺ rec";
+        arm.classList.toggle("on", seqEngine.recEnabled[pi]);
+        arm.title = seqEngine.recEnabled[pi] ? "record-enabled, tap to exclude from recording" : "excluded from recording";
+        arm.addEventListener("click", () => { seqEngine.recEnabled[pi] = !seqEngine.recEnabled[pi]; renderSeq(); });
+        const ed = document.createElement("button");
+        ed.className = "x"; ed.textContent = "⤢ notes";
+        ed.title = "view / edit notes vs the snap grid";
+        ed.addEventListener("click", () => openNoteEd(pi));
+        const x = document.createElement("button");
+        x.className = "x"; x.textContent = "clear";
+        x.disabled = !seqEngine.hasContent(pi);
+        x.addEventListener("click", () => { for (const ev of seqEngine.clearPart(pi)) sendPartMidi(ev.part, ev.bytes); persistLoops(); renderSeq(); renderKb16(); });
+        row.append(q, arm, ed, x);
+        lane.append(row);
+        lanes.append(lane);
+      }
+      updateSeqGrids(-1);
+    }
+
+    /* ---- live note preview: one mini piano per MIDI source ----
+       Adaptive range: starts at 1 octave around what's played, widens up to 3
+       when playing spans more, shrinks back after ~3s of narrow playing.
+       Velocity = highlight intensity; channel pressure modulates held notes;
+       pitch bend shows as a small amber bar along the bottom. */
+    const noteViz = (() => {
+      const BLACK = new Set([1, 3, 6, 8, 10]);
+      const WHITE_ORDER = [0, 2, 4, 5, 7, 9, 11];
+      const BLACK_LEFT = { 1: 0, 3: 1, 6: 3, 8: 4, 10: 5 };
+      const sources = new Map();
+      let timer = null;
+
+      function src(name) {
+        if (sources.has(name)) return sources.get(name);
+        const row = document.createElement("div");
+        row.className = "vizrow";
+        const nm = document.createElement("span");
+        nm.className = "nm";
+        nm.textContent = name.replace(/ MIDI \d+$/, "");
+        const canvas = document.createElement("canvas");
+        row.append(nm, canvas);
+        $("#noteViz").append(row);
+        const s = { canvas, notes: new Map(), pressure: 0, bend: 0, lo: 48, hi: 60, shrinkAt: 0 };
+        sources.set(name, s);
+        if (!timer) timer = setInterval(drawAll, 50);
+        return s;
+      }
+
+      function ingest(name, data) {
+        const s = src(name);
+        const t = data[0] & 0xf0, d1 = data[1], d2 = data[2];
+        const now = performance.now();
+        if (t === 0x90 && d2 > 0) s.notes.set(d1, { vel: d2, held: true, at: now, offAt: 0 });
+        else if (t === 0x80 || (t === 0x90 && d2 === 0)) { const n = s.notes.get(d1); if (n) { n.held = false; n.offAt = now; } }
+        else if (t === 0xa0) { const n = s.notes.get(d1); if (n) n.vel = d2; }
+        else if (t === 0xd0) s.pressure = d1;
+        else if (t === 0xe0) s.bend = (((d2 << 7) | d1) - 8192) / 8192;
+      }
+
+      function adaptRange(s, now) {
+        const recent = [...s.notes.entries()].filter(([, n]) => n.held || now - n.offAt < 4000).map(([k]) => k);
+        if (!recent.length) return;
+        const lo = Math.floor(Math.min(...recent) / 12) * 12;
+        const hi = Math.ceil((Math.max(...recent) + 1) / 12) * 12;
+        const span = Math.min(36, Math.max(12, hi - lo));
+        const want = [Math.max(0, lo), Math.max(0, lo) + span];
+        if (want[0] < s.lo || want[1] > s.hi) { [s.lo, s.hi] = want; s.shrinkAt = 0; }     // widen instantly
+        else if (want[1] - want[0] < s.hi - s.lo) {                                        // shrink only after 3s stable
+          if (!s.shrinkAt) s.shrinkAt = now;
+          else if (now - s.shrinkAt > 3000) { [s.lo, s.hi] = want; s.shrinkAt = 0; }
+        } else s.shrinkAt = 0;
+      }
+
+      function drawAll() {
+        const now = performance.now();
+        for (const s of sources.values()) {
+          adaptRange(s, now);
+          const c = s.canvas, dpr = devicePixelRatio || 1;
+          const W = c.clientWidth, H = c.clientHeight;
+          if (c.width !== W * dpr) { c.width = W * dpr; c.height = H * dpr; }
+          const g = c.getContext("2d");
+          g.setTransform(dpr, 0, 0, dpr, 0, 0);
+          g.clearRect(0, 0, W, H);
+          const octs = (s.hi - s.lo) / 12;
+          const whiteW = Math.min(16, W / (7 * octs));   // keys keep a sane aspect, never stretch
+          const x0 = (W - whiteW * 7 * octs) / 2;        // centered
+          g.translate(x0, 0);
+          const alphaOf = n => {
+            let a = (n.vel / 127) * (n.held ? 1 : Math.max(0, 1 - (now - n.offAt) / 700));
+            if (n.held && s.pressure) a = Math.min(1, a * (0.6 + s.pressure / 127));
+            return a;
+          };
+          const keyRect = note => {
+            const rel = note - s.lo, oct = Math.floor(rel / 12), pc = ((rel % 12) + 12) % 12;
+            return BLACK.has(pc)
+              ? [(oct * 7 + BLACK_LEFT[pc]) * whiteW + whiteW * 0.62, 0, whiteW * 0.72, H * 0.6, true]
+              : [(oct * 7 + WHITE_ORDER.indexOf(pc)) * whiteW, 0, whiteW, H, false];
+          };
+          // keyboard
+          for (let note = s.lo; note < s.hi; note++) {
+            const pc = ((note - s.lo) % 12 + 12) % 12;
+            if (BLACK.has(pc)) continue;
+            const [x, y, w, h] = keyRect(note);
+            g.strokeStyle = "rgba(53,61,70,.8)";
+            g.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+          }
+          for (let note = s.lo; note < s.hi; note++) {
+            const pc = ((note - s.lo) % 12 + 12) % 12;
+            if (!BLACK.has(pc)) continue;
+            const [x, y, w, h] = keyRect(note);
+            g.fillStyle = "rgba(53,61,70,.9)";
+            g.fillRect(x, y, w, h);
+          }
+          // highlights
+          for (const [note, n] of s.notes) {
+            const a = alphaOf(n);
+            if (a <= 0.01) { if (!n.held) s.notes.delete(note); continue; }
+            if (note < s.lo || note >= s.hi) continue;
+            const [x, y, w, h, isBlack] = keyRect(note);
+            g.fillStyle = `rgba(53,194,161,${(isBlack ? 0.95 : 0.75) * a})`;
+            g.fillRect(x + 1, y + 1, w - 2, h - 2);
+          }
+          // pitch bend bar
+          if (Math.abs(s.bend) > 0.02) {
+            g.fillStyle = "rgba(233,180,76,.9)";
+            const cx = W / 2;
+            g.fillRect(Math.min(cx, cx + s.bend * W / 6), H - 3, Math.abs(s.bend * W / 6), 2);
+          }
+        }
+      }
+      return { ingest };
+    })();
+
+    /* ---- DOIO KB16 feedback (custom QMK firmware, MIDI SysEx F0 7D 4F …) ----
+       Lights the top-row key of the active part and flashes instrument names
+       on the macropad's OLED. Works wherever Web MIDI works, incl. Android. */
+    let kb16Out = null, kb16OledTimer = null, kb16SendCursor = 0;
+    // Paced sends: Android's USB-MIDI stack drops back-to-back SysEx bursts.
+    // Cursor is CAPPED near now; an uncapped cursor drifts into the future
+    // under frequent repaints and smears LED updates into ripple animations.
+    const kb16Send = (...b) => {
+      try {
+        const now = performance.now();
+        kb16SendCursor = Math.max(now, Math.min(kb16SendCursor, now + 150)) + 8;
+        kb16Out?.send([0xF0, 0x7D, 0x4F, ...b, 0xF7], kb16SendCursor);
+      } catch (e) {}
+    };
+    // Diff layer: remember what each LED shows, send only changes. A mute
+    // toggle is then 1 message instead of a 17-message repaint storm.
+    let kb16LedState = {};
+    function kb16SetLed(led, color) {            // color = [r,g,b] or null for off
+      const key = String(led), want = color ? color.join(",") : "off";
+      if (kb16LedState[key] === want) return;
+      kb16LedState[key] = want;
+      if (color) kb16Send(0x01, led, ...color); else kb16Send(0x02, led);
+    }
+    const kb16Text = (line, s) =>
+      kb16Send(0x10, line, ...[...String(s).slice(0, 21)].map(c => c.charCodeAt(0) & 0x7F));
+    const PART_BY_ACTION = { partLead: 0, partChord: 1, partBass: 2, partDrum: 3 };
+    const SOLO_BY_ACTION = { soloToggleLead: 0, soloToggleChord: 1, soloToggleBass: 2, soloToggleDrum: 3 };
+    const MUTE_BY_ACTION = { muteToggleLead: 0, muteToggleChord: 1, muteToggleBass: 2, muteToggleDrum: 3 };
+    const SOLO_COLOR = [127, 88, 0];   // console amber, solo keys, always
+    const MUTE_COLOR = [127, 0, 0];    // console red, mute keys, always
+    // Idempotent: repaints every mapped key from current state. Part keys show
+    // selection (active = its color) with solo overriding in amber; solo/mute
+    // keys show DEDUCED solo/mute state. Safe to call any time, incl. the
+    // moment the DOIO is (re)plugged, so its lights are never stale.
+    function renderKb16() {
+      if (!kb16Out) return;
+      const solo = soloIdx();
+      const volsKnown = PARTS.every(p => typeof state.fxCache[p.key].volume === "number");
+      for (const m of Object.values(mappings)) {
+        if (m.led == null) continue;
+        const a = m.action;
+        if (a === "empty") continue;   // placeholders share LEDs with real keys (layer 2 vs 3), never paint/clear them
+        if (PART_BY_ACTION[a] !== undefined) {
+          const part = PART_BY_ACTION[a];
+          if (solo === part)            kb16SetLed(m.led, SOLO_COLOR);
+          else if (part === state.part) kb16SetLed(m.led, m.color || [127, 127, 127]);
+          else                          kb16SetLed(m.led, null);
+        } else if (SOLO_BY_ACTION[a] !== undefined) {
+          kb16SetLed(m.led, solo === SOLO_BY_ACTION[a] ? SOLO_COLOR : null);
+        } else if (a === "soloToggle") {
+          kb16SetLed(m.led, solo !== null ? SOLO_COLOR : null);
+        } else if (MUTE_BY_ACTION[a] !== undefined) {
+          kb16SetLed(m.led, volsKnown && mutedIdx(MUTE_BY_ACTION[a]) ? MUTE_COLOR : null);
+        } else if (a === "muteToggle") {
+          kb16SetLed(m.led, volsKnown && mutedIdx(state.part) ? MUTE_COLOR : null);
+        } else if (a === "seqRecToggle") {
+          kb16SetLed(m.led, seqEngine.recording ? [127, 0, 0] : seqEngine.preroll ? [45, 0, 0] : null);  // armed blinks via onBeat
+        } else if (a === "seqPlayStop") {
+          kb16SetLed(m.led, seqClock.running ? [0, 90, 20] : null);
+        } else {
+          kb16SetLed(m.led, null);   // empty / metronome / non-stateful: dark (metronome flashes via onBeat)
+        }
+      }
+    }
+    function kb16FlashOled(line0, line1) {
+      kb16Text(0, line0); kb16Text(1, line1);
+      clearTimeout(kb16OledTimer);
+      kb16OledTimer = setTimeout(() => kb16Send(0x11), 5000);  // revert to layer art
+    }
+
+    let knobTarget = null, knobTimer = null;
+    function stepInstrument(delta) {
+      const sel = els.instrSelect;
+      if (!sel.options.length) return;
+      const base = knobTarget !== null ? knobTarget : sel.selectedIndex;
+      const next = (base + delta + sel.options.length) % sel.options.length;
+      knobTarget = next; sel.selectedIndex = next;          // instant feedback
+      kb16FlashOled(PARTS[state.part].name, sel.options[next].textContent);
+      clearTimeout(knobTimer);
+      knobTimer = setTimeout(() => {
+        const key = PARTS[state.part].key;
+        setPreset(key, sel.value, sel.options[sel.selectedIndex].dataset.name);
+        msg(`Knob → ${key}: ${sel.options[sel.selectedIndex].textContent}`);
+        knobTarget = null;
+      }, 180);
+    }
+    const ACTIONS = {
+      empty:     () => {},        // placeholder; key is known but does nothing
+      instrNext: () => stepInstrument(1),
+      instrPrev: () => stepInstrument(-1),
+      partLead:  () => selectPart(0),
+      partChord: () => selectPart(1),
+      partBass:  () => selectPart(2),
+      partDrum:  () => selectPart(3),
+      reverbUp:   () => nudgeFx("reverb", +FX_STEP),
+      reverbDown: () => nudgeFx("reverb", -FX_STEP),
+      delayUp:    () => nudgeFx("delay", +FX_STEP),
+      delayDown:  () => nudgeFx("delay", -FX_STEP),
+      volumeUp:   () => nudgeFx("volume", +FX_STEP),   // spare actions, not mapped yet
+      volumeDown: () => nudgeFx("volume", -FX_STEP),
+      play:      () => { setRecording(false); transport(0x05, "play"); },
+      pause:     () => { setRecording(false); transport(0x06, "pause"); },
+      recToggle: () => { transport(0x01, "record/overdub"); setRecording(true); },
+      clear:     () => clearLoop(),
+      soloToggle:      () => soloToggle(state.part),
+      soloToggleLead:  () => soloToggle(0),
+      soloToggleChord: () => soloToggle(1),
+      soloToggleBass:  () => soloToggle(2),
+      soloToggleDrum:  () => soloToggle(3),
+      muteToggle:      () => muteToggle(state.part),
+      muteToggleLead:  () => muteToggle(0),
+      muteToggleChord: () => muteToggle(1),
+      muteToggleBass:  () => muteToggle(2),
+      muteToggleDrum:  () => muteToggle(3),
+      seqPlayStop:     () => seqPlayStop(),
+      seqRecToggle:    () => seqRecTap(),       // hold = clear active loop (handled by key up/down)
+      seqMetronome:    () => seqTapTempo(),     // hold = click on/off (handled by key up/down)
+      keyUp:           () => stepKey(1),
+      keyDown:         () => stepKey(-1),
+      scaleNext:       () => stepScale(1),
+      scalePrev:       () => stepScale(-1),
+    };
+    // actions where HOLDING the key means something different from tapping it
+    const HOLD_ACTIONS = { seqRecToggle: seqRecHold, seqMetronome: seqMetHold };
+    const HOLD_MS = 550;
+    /* ---- user-editable key mappings (⚙ panel, learn mode) ----
+       Entry: { action, led?, color? }; led/color drive the DOIO feedback for
+       part keys. Page truth → localStorage. Defaults match the flashed DOIO
+       layer-2 layout (top row drum/bass/chord/lead = F24…F21 = LEDs 0…3). */
+    const MAP_KEY = "orbaKeymap2";
+    /* Layout reference for the DOIO KB16 (orba-doio firmware). Mappings ship empty
+       (DEFAULT_MAPPINGS below); these notes describe the keyboard's layers so an
+       imported mapping lines up with the hardware.
+       DOIO layer 2: row1 part keys, row2 solo, row3 mute, row4 spares X/Y/Z.
+       DOIO layer 3: letters A-P + Q-V on knobs (placeholders, action "empty"). */
+    const DEFAULT_MAPPINGS = {};   // shipped empty; import a mapping in the gear panel
+    // LED index per physical DOIO key, by keycode (matches the orba-doio KB16 firmware).
+    // Grid is row-major: key 1 (top-left) = LED 0 … key 16 = LED 15; 12 = layer key.
+    const DOIO_LED_BY_CODE = {
+      Minus: 0, Equal: 1, Backquote: 2, BracketLeft: 3,
+      Digit1: 4, Digit2: 5, Digit3: 6, Digit4: 7,
+      Digit5: 8, Digit6: 9, Digit7: 10, Digit8: 11,
+      KeyX: 13, KeyY: 14, KeyZ: 15,
+      KeyA: 0, KeyB: 1, KeyC: 2, KeyD: 3, KeyE: 4, KeyF: 5, KeyG: 6, KeyH: 7,
+      KeyI: 8, KeyJ: 9, KeyK: 10, KeyL: 11, KeyN: 13, KeyO: 14, KeyP: 15,
+    };
+    // Human names for the ⚙ panel; the keycode is the actual identifier.
+    const DOIO_LABELS = {
+      Minus: "key 1", Equal: "key 2", Backquote: "key 3", BracketLeft: "key 4",
+      Digit1: "key 5", Digit2: "key 6", Digit3: "key 7", Digit4: "key 8",
+      Digit5: "key 9", Digit6: "key 10", Digit7: "key 11", Digit8: "key 12",
+      KeyX: "key 14", KeyY: "key 15", KeyZ: "key 16",
+      F14: "big knob ↺", F16: "big knob ↻",
+      F17: "knob A ↺",  F18: "knob A ↻",
+      F19: "knob B ↺",  F24: "knob B ↻",
+      KeyA: "L3 key 1", KeyB: "L3 key 2", KeyC: "L3 key 3", KeyD: "L3 key 4",
+      KeyE: "L3 key 5", KeyF: "L3 key 6", KeyG: "L3 key 7", KeyH: "L3 key 8",
+      KeyI: "L3 key 9", KeyJ: "L3 key 10", KeyK: "L3 key 11", KeyL: "L3 key 12",
+      KeyN: "L3 key 14", KeyO: "L3 key 15", KeyP: "L3 key 16",
+      KeyQ: "L3 knob A ↺", KeyR: "L3 knob A ↻", KeyS: "L3 knob B ↺",
+      KeyT: "L3 knob B ↻", KeyU: "L3 big knob ↺", KeyV: "L3 big knob ↻",
+    };
+    let mappings;
+    try { mappings = JSON.parse(localStorage.getItem(MAP_KEY)) || {}; }   // no mapping ships by default; import one in the gear panel
+    catch { mappings = {}; }
+    for (const [code, m] of Object.entries(mappings)) m.led ??= DOIO_LED_BY_CODE[code];   // backfill older entries
+    // one-time: stored maps from before the looper/key-scale features get the new actions
+    for (const [code, entry] of Object.entries({
+      KeyX: ["seqRecToggle", "rec"], KeyY: ["seqPlayStop", "play/stop"], KeyZ: ["seqMetronome", "metronome"],
+      KeyQ: ["keyDown", "key −"], KeyR: ["keyUp", "key +"], KeyS: ["scalePrev", "scale −"], KeyT: ["scaleNext", "scale +"],
+    })) {
+      if (mappings[code]?.action === "empty") { mappings[code].action = entry[0]; if (!mappings[code].label || /^(key 1[456]|L3 )/.test(mappings[code].label)) mappings[code].label = entry[1]; }
+    }
+    const saveMappings = () => localStorage.setItem(MAP_KEY, JSON.stringify(mappings));
+    let mapEnabled = localStorage.getItem("orbaMapEnabled") === "1";   // key mappings stay off until you enable them
+
+    let learning = false;
+    const keyDownAt = {};                        // code -> press timestamp (for hold actions)
+    window.addEventListener("keydown", e => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
+      if (learning) { e.preventDefault(); finishLearn(e.code); return; }
+      if (cfgOverlay.classList.contains("open")) {
+        // panel open: keys PREVIEW (ping their row) instead of firing actions
+        e.preventDefault();
+        pingMapping(e.code);
+        return;
+      }
+      if (!mapEnabled) return;
+      const name = mappings[e.code]?.action;
+      const action = ACTIONS[name];
+      if (!action) return;
+      e.preventDefault();
+      if (e.repeat) return;
+      if (HOLD_ACTIONS[name]) { keyDownAt[e.code] = performance.now(); }   // decide on keyup
+      action();                                  // tap behavior fires immediately (timing matters for taps)
+    });
+    window.addEventListener("keyup", e => {
+      const name = mappings[e.code]?.action;
+      if (!HOLD_ACTIONS[name] || !keyDownAt[e.code]) return;
+      const held = performance.now() - keyDownAt[e.code];
+      delete keyDownAt[e.code];
+      if (held >= HOLD_MS) {
+        if (name === "seqRecToggle") seqRecTap();   // undo the tap-toggle the keydown caused…
+        HOLD_ACTIONS[name]();                       // …then do the hold behavior
+      }
+    });
+
+    function clearLoop() {
+      if (!confirm("Clear the current loop? This erases the recording.")) return;
+      transport(0x03, "clear"); setRecording(false);
+    }
+
+    /* ===================================================================
+       Smart MIDI, fully automatic:
+       • If the Orba shows up as a USB device, talk to it over USB (no tap).
+         Otherwise fall back to Bluetooth (tap Connect once; browsers forbid
+         auto-connecting BLE). USB wins when both exist.
+       • ANY non-Orba MIDI input that's plugged in auto-forwards to the Orba.
+         Presence is the toggle, no button to remember, over whichever
+         transport is live. The 🎹 is just a status light (tap = mute).
+       NOTE: the Orba's looper records physical play only, so forwarded notes
+       SOUND but cannot be looped on-device.
+    =================================================================== */
+    // part index -> Orba USB port index. Remap here if a part plays the wrong sound.
+    const USB_PART_PORT = [0, 1, 2, 3];   // [Lead, Chord, Bass, Drum]
+    // Forward a keyboard message to the selected part. The Orba addresses parts
+    // DIFFERENTLY per transport: over USB each part is its OWN port (port = part,
+    // notes on channel 1); over BLE it's one stream and the CHANNEL picks the part.
+    /* Per-device routing: each MIDI input can be pinned to a part ("lead"…)
+       or follow the active part (default) or be muted. Page truth → localStorage. */
+    const ROUTING_KEY = "orbaRouting";
+    let routing;
+    try { routing = JSON.parse(localStorage.getItem(ROUTING_KEY)) || {}; } catch { routing = {}; }
+    const saveRouting = () => localStorage.setItem(ROUTING_KEY, JSON.stringify(routing));
+    function routedPart(srcName) {
+      const r = routing[srcName] || "follow";
+      if (r === "mute") return null;
+      if (r === "follow") return state.part;
+      const idx = PARTS.findIndex(p => p.key === r);
+      return idx >= 0 ? idx : state.part;
+    }
+
+    function forwardMidi(data, srcName) {
+      const type = data[0] & 0xf0;
+      if (type < 0x80 || type > 0xe0 || type === 0xc0) return;   // channel-voice only; drop program-change
+      noteViz.ingest(srcName || "MIDI", data);                   // preview shows the playing regardless of routing
+      if (fwdMute || !orbaReady()) return;
+      const dstPart = routedPart(srcName);
+      if (dstPart === null) return;                              // device muted by routing
+      noteEd.liveInput(dstPart, data);                           // live overlay in the open editor
+      // looper tap: capture EVERYTHING (notes, CC, bend, AT) at the live tick
+      if (!maybeKickRecord(data, dstPart) && seqEngine.recording) seqEngine.record(data, liveLoopTick(), dstPart);
+      const d1 = data[1], d2 = data[2];
+      const noteOn  = type === 0x90 && d2 > 0;
+      const noteOff = type === 0x80 || (type === 0x90 && d2 === 0);
+      if (usbOut) {                                              // ---- USB: port = part, channel 1 ----
+        let idx = USB_PART_PORT[dstPart] ?? dstPart;
+        if (noteOff && fwdNotes.has(d1)) idx = fwdNotes.get(d1);   // note-off follows its note-on's port
+        idx = Math.min(idx, usbOuts.length - 1);
+        if (noteOn) fwdNotes.set(d1, idx); else if (noteOff) fwdNotes.delete(d1);
+        const out = usbOuts[idx] || usbOut;
+        if (noteOn) out.send([0x90, d1, d2]);
+        else if (noteOff) out.send([0x80, d1, 0]);
+        else if (type === 0xD0) out.send([type, d1]);
+        else out.send([type, d1, d2]);                          // poly-AT / CC / pitch-bend
+      } else {                                                   // ---- BLE: one stream, channel = part ----
+        const ch = PARTS[dstPart].channel - 1;
+        let c = ch;
+        if (noteOff && fwdNotes.has(d1)) c = fwdNotes.get(d1);
+        if (noteOn) fwdNotes.set(d1, ch); else if (noteOff) fwdNotes.delete(d1);
+        if (noteOn) sendBleMidi([0x90 | ch, d1, d2]);
+        else if (noteOff) sendBleMidi([0x80 | c, d1, 0]);
+        else if (type === 0xD0) sendBleMidi([type | ch, d1]);
+        else sendBleMidi([type | ch, d1, d2]);
+      }
+    }
+
+    // (Re)scan MIDI ports: find the Orba's USB ports, wire every other input to forward.
+    function scanMidi() {
+      if (!midiAccess) return;
+      // Android lists a PAIRED BLE Orba ("Artiphon Orba 2") next to the live USB
+      // one ("… USB"); prefer USB ports or commands vanish into the idle pairing.
+      const allOuts = Array.from(midiAccess.outputs.values()).filter(isOrbaPort);
+      const usbOutsOnly = allOuts.filter(p => /usb/i.test(p.name || ""));
+      const outs = usbOutsOnly.length ? usbOutsOnly : allOuts;                   // 4 ports = 4 parts over USB
+      const allIns = Array.from(midiAccess.inputs.values()).filter(isOrbaPort);
+      const inp = allIns.find(p => /usb/i.test(p.name || "")) || allIns[0] || null;
+      const kb16 = Array.from(midiAccess.outputs.values()).find(isKb16Port) || null;
+      // ANY hot-plug event invalidates the LED diff cache: the browser reuses
+      // port objects across replugs, but the board powers up dark.
+      kb16LedState = {};
+      kb16Out = kb16;
+      if (kb16Out) render();
+      const usbAppeared = outs.length && !usbOut;
+      usbOuts = outs;
+      usbOut = outs[0] || null;   // SysEx control + sync go here (register writes are global, port-agnostic)
+      if (inp !== usbIn) {                                  // Orba USB input → feed replies (sync + PC burst)
+        if (usbIn) usbIn.onmidimessage = null;
+        usbIn = inp;
+        if (inp) inp.onmidimessage = e => onMidiBytes(Array.from(e.data));
+      }
+      for (const i of midiAccess.inputs.values()) {        // every NON-Orba input auto-forwards
+        if (isOrbaPort(i) || isKb16Port(i)) continue;
+        i.onmidimessage = e => forwardMidi(Array.from(e.data), i.name);
+      }
+      updateConnUI();
+      if (usbAppeared) { msg("Orba connected (USB)"); readDeviceState(); }   // auto-sync the moment it's cabled in
+    }
+
+    async function initMidi() {
+      if (!navigator.requestMIDIAccess) { els.midiBtn.disabled = true; els.midiBtn.title = "Web MIDI not supported here"; return; }
+      try { midiAccess = await navigator.requestMIDIAccess({ sysex: true }); }   // sysex needed for control over USB
+      catch (e) {
+        try { midiAccess = await navigator.requestMIDIAccess({ sysex: false }); msg("MIDI: notes only. Allow MIDI access for full control."); }
+        catch (e2) { msg("Web MIDI blocked: " + (e2.message || e2)); return; }
+      }
+      midiAccess.onstatechange = scanMidi;   // hot-plug: re-scan on any connect/disconnect
+      scanMidi();
+    }
+
+    /* ===================================================================
+       Wire up the DOM + load the library
+    =================================================================== */
+    $("#fxToggle").addEventListener("click", () => $("#fx").classList.toggle("open"));
+
+    // Android: long-press fires a context menu / selection which kills our hold gestures
+    document.addEventListener("contextmenu", e => { if (e.target.closest("button, .lane, canvas, .part")) e.preventDefault(); });
+
+    /* ---- sequencer wiring (tap on press for timing; hold decided on release) ---- */
+    function wireHold(el, tapFn, holdFn, undoTapFn) {
+      let t0 = 0;
+      el.addEventListener("pointerdown", e => { e.preventDefault(); t0 = performance.now(); tapFn(); });
+      el.addEventListener("pointerup", () => {
+        if (t0 && performance.now() - t0 >= HOLD_MS) { undoTapFn?.(); holdFn(); }
+        t0 = 0;
+      });
+    }
+    $("#seqPlay").addEventListener("click", () => seqPlayStop());
+    wireHold($("#seqRec"), seqRecTap, seqRecHold, seqRecTap);
+    wireHold($("#seqMet"), seqTapTempo, seqMetHold);
+    $("#seqLen").addEventListener("change", () => {
+      if ($("#seqLen").value === "auto") {
+        seqAutoLen = true;
+        msg("loop length: auto, your first take decides");
+        return;
+      }
+      seqAutoLen = false;
+      seqEngine.setLoopBeats(Number($("#seqLen").value));   // non-destructive, no popup
+      persistLoops();
+      renderSeq(); renderKb16();
+    });
+
+    let orbaPlayGuess = false;            // device transport state is unreadable; alternate
+    els.playPauseBtn.addEventListener("click", () => {
+      orbaPlayGuess = !orbaPlayGuess;
+      if (orbaPlayGuess) ACTIONS.play(); else ACTIONS.pause();
+      els.playPauseBtn.textContent = orbaPlayGuess ? "⏸" : "▶";
+    });
+    els.recBtn.addEventListener("click", ACTIONS.recToggle);
+
+    els.connectBtn.addEventListener("click", connectBle);
+    els.midiBtn.addEventListener("click", () => {           // 🎹 = mute/unmute keyboard forwarding
+      fwdMute = !fwdMute;
+      if (fwdMute) { for (const [n, c] of fwdNotes) sendToOrba([0x80 | c, n, 0]); fwdNotes.clear(); }  // release held notes
+      updateConnUI();
+      msg(fwdMute ? "Keyboard muted" : "Keyboard forwarding on");
+    });
+    // tap = select part · long-press (550ms) = solo/un-solo that part
+    let pressTimer = null, longFired = false;
+    els.parts.addEventListener("pointerdown", e => {
+      const b = e.target.closest("button[data-part]");
+      if (!b || b.disabled) return;
+      longFired = false;
+      pressTimer = setTimeout(() => { longFired = true; soloToggle(Number(b.dataset.part)); }, 550);
+    });
+    for (const ev of ["pointerup", "pointercancel", "pointerleave"]) els.parts.addEventListener(ev, () => clearTimeout(pressTimer));
+    els.parts.addEventListener("click", e => {
+      if (longFired) { longFired = false; return; }
+      const b = e.target.closest("button[data-part]");
+      if (b) selectPart(Number(b.dataset.part));
+    });
+
+    /* ---- ⚙ panel: mappings (learn mode) + device routing ---- */
+    const cfgOverlay = $("#cfgOverlay"), mapList = $("#mapList"), devList = $("#devList"), learnBtn = $("#learnBtn");
+    const rgb7ToHex = c => "#" + (c || [127,127,127]).map(v => Math.min(255, v * 2).toString(16).padStart(2, "0")).join("");
+    const hexToRgb7 = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) >> 1);
+    let mapRows = {};
+    function pingMapping(code) {
+      const row = mapRows[code];
+      const el = row || learnBtn;            // unmapped key → nudge the Learn button
+      el.classList.add("ping");
+      clearTimeout(el._pingT);               // repeats extend the glow, no strobing
+      el._pingT = setTimeout(() => el.classList.remove("ping"), 800);
+      if (row) row.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+    function renderMapList() {
+      mapList.innerHTML = "";
+      mapRows = {};
+      for (const [code, m] of Object.entries(mappings)) {
+        const row = document.createElement("div");
+        row.className = "maprow";
+        const actSel = document.createElement("select");
+        for (const a of Object.keys(ACTIONS)) {
+          const o = document.createElement("option");
+          o.value = a; o.textContent = a; o.selected = a === m.action;
+          actSel.append(o);
+        }
+        actSel.addEventListener("change", () => { m.action = actSel.value; saveMappings(); renderMapList(); render(); });
+        const color = document.createElement("input");
+        color.type = "color"; color.value = rgb7ToHex(m.color);
+        // solo/mute keys wear fixed console colors (amber/red); no picker for them
+        color.style.visibility = m.led != null && PART_BY_ACTION[m.action] !== undefined ? "visible" : "hidden";
+        color.addEventListener("input", () => { m.color = hexToRgb7(color.value); saveMappings(); render(); });
+        const del = document.createElement("button");
+        del.className = "del"; del.textContent = "✕";
+        del.addEventListener("click", () => { delete mappings[code]; saveMappings(); renderMapList(); render(); });
+        const cell = document.createElement("div"); cell.className = "keycell";
+        const lbl = document.createElement("input");
+        lbl.type = "text"; lbl.placeholder = "label…";
+        lbl.value = m.label ?? DOIO_LABELS[code] ?? "";
+        lbl.addEventListener("change", () => { m.label = lbl.value.trim(); saveMappings(); });
+        const c = document.createElement("code"); c.textContent = code;   // the actual key, always visible
+        cell.append(lbl, c);
+        row.append(cell, actSel, color, del);
+        mapList.append(row);
+        mapRows[code] = row;
+      }
+    }
+    function finishLearn(code) {
+      learning = false;
+      learnBtn.textContent = "+ Learn a key…";
+      if (!mappings[code]) mappings[code] = { action: "empty", led: DOIO_LED_BY_CODE[code], color: [127, 127, 127], label: DOIO_LABELS[code] ?? "" };
+      saveMappings(); renderMapList(); render();
+      msg(`Learned ${code}, pick its action`);
+    }
+    learnBtn.addEventListener("click", () => {
+      learning = !learning;
+      learnBtn.textContent = learning ? "…press a key on the controller (tap to cancel)" : "+ Learn a key…";
+    });
+    function renderDevList() {
+      devList.innerHTML = "";
+      const inputs = Array.from(midiAccess?.inputs.values() || []).filter(p => !isOrbaPort(p) && !isKb16Port(p));
+      const names = [...new Set([...inputs.map(p => p.name), ...Object.keys(routing)])];
+      if (!names.length) { devList.innerHTML = '<div class="devrow"><span class="nm" style="color:var(--muted)">No MIDI devices yet</span></div>'; return; }
+      for (const name of names) {
+        const row = document.createElement("div");
+        row.className = "devrow";
+        const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = name;
+        const sel = document.createElement("select");
+        for (const [v, label] of [["follow", "Follow active"], ["lead", "Lead"], ["chord", "Chord"], ["bass", "Bass"], ["drum", "Drum"], ["mute", "Mute"]]) {
+          const o = document.createElement("option");
+          o.value = v; o.textContent = label; o.selected = (routing[name] || "follow") === v;
+          sel.append(o);
+        }
+        sel.addEventListener("change", () => {
+          if (sel.value === "follow") delete routing[name]; else routing[name] = sel.value;
+          saveRouting();
+        });
+        row.append(nm, sel);
+        devList.append(row);
+      }
+    }
+    /* ---- mapping presets (key mappings ONLY; routing is per-app, not per-preset) ---- */
+    const MAPPRESET_KEY = "orbaKeymapPresets";
+    function loadMapPresets() {
+      try {
+        const s = JSON.parse(localStorage.getItem(MAPPRESET_KEY));
+        if (s && Object.keys(s).length) return s;
+      } catch {}
+      return { "doio default": structuredClone(DEFAULT_MAPPINGS) };   // always something to duplicate from
+    }
+    const saveMapPresets = s => localStorage.setItem(MAPPRESET_KEY, JSON.stringify(s));
+    const mapPresetSel = $("#mapPresetSel");
+    function refreshMapPresetList() {
+      const store = loadMapPresets();
+      mapPresetSel.innerHTML = '<option value="">Mapping presets…</option>';
+      for (const name of Object.keys(store).sort()) {
+        const o = document.createElement("option"); o.value = name; o.textContent = name; mapPresetSel.append(o);
+      }
+    }
+    mapPresetSel.addEventListener("change", () => {
+      const snap = loadMapPresets()[mapPresetSel.value];
+      if (!snap) return;
+      mappings = structuredClone(snap);
+      saveMappings(); renderMapList(); render();
+      msg(`Mappings: "${mapPresetSel.value}" loaded`);
+    });
+    $("#mapPresetSave").addEventListener("click", () => {
+      const name = prompt("Save current key mappings as:");
+      if (!name) return;
+      const store = loadMapPresets(); store[name.trim()] = structuredClone(mappings); saveMapPresets(store);
+      refreshMapPresetList(); mapPresetSel.value = name.trim(); msg(`Mappings saved as "${name.trim()}"`);
+    });
+    $("#mapPresetDel").addEventListener("click", () => {
+      const name = mapPresetSel.value; if (!name) return;
+      if (!confirm(`Delete mapping preset "${name}"?`)) return;
+      const store = loadMapPresets(); delete store[name]; saveMapPresets(store); refreshMapPresetList();
+    });
+    const mapEnabledBox = $("#mapEnabled");
+    mapEnabledBox.checked = mapEnabled;
+    mapEnabledBox.addEventListener("change", () => { mapEnabled = mapEnabledBox.checked; localStorage.setItem("orbaMapEnabled", mapEnabled ? "1" : "0"); render(); });
+    $("#mapExport").addEventListener("click", () => {
+      const blob = new Blob([JSON.stringify(mappings, null, 2)], { type: "application/json" });
+      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "orba-mapping.json"; a.click(); URL.revokeObjectURL(a.href);
+    });
+    $("#mapImport").addEventListener("click", () => $("#mapImportFile").click());
+    $("#mapImportFile").addEventListener("change", async e => {
+      const f = e.target.files[0]; if (!f) return;
+      try {
+        const obj = JSON.parse(await f.text());
+        if (!obj || typeof obj !== "object" || Array.isArray(obj)) throw 0;
+        mappings = obj;
+        for (const [code, m] of Object.entries(mappings)) m.led ??= DOIO_LED_BY_CODE[code];
+        saveMappings(); renderMapList(); render(); msg("Mapping imported");
+      } catch { msg("Could not read that mapping file"); }
+      e.target.value = "";
+    });
+
+    /* ---- key & scale picker (+ custom scale editor) ---- */
+    const keyOverlay = $("#keyOverlay"), rootSel = $("#rootSel"), scaleSel = $("#scaleSel");
+    const customEd = $("#customEd"), customKb = $("#customKb"), customNameIn = $("#customName");
+    ROOTS.forEach((r, i) => { const o = document.createElement("option"); o.value = i; o.textContent = r; rootSel.append(o); });
+    function refreshScaleSel(selIdx) {
+      scaleSel.innerHTML = "";
+      for (let i = 0; i < scaleCount(); i++) { const o = document.createElement("option"); o.value = i; o.textContent = scaleName(i); scaleSel.append(o); }
+      const add = document.createElement("option"); add.value = "new"; add.textContent = "＋ new custom…"; scaleSel.append(add);
+      scaleSel.value = String(selIdx ?? 0);
+    }
+
+    /* mini keyboard editor: 2 octaves STARTING AT THE ROOT, what you tap is
+       what the pads will sound. Selection is stored as intervals from the
+       root, so saved scales transpose when the root changes. */
+    const KB_BLACK = new Set([1, 3, 6, 8, 10]);
+    let customSel = new Set();
+    function kbLayout() {                       // keys for 2 octaves from the root, real piano geometry
+      const root = orbaCtx.root ?? 0;
+      const keys = [];
+      let wi = 0;
+      for (let i = 0; i < 24; i++) {
+        const pc = (root + i) % 12;
+        if (KB_BLACK.has(pc)) keys.push({ i, black: true, x: wi - 1 + 0.62, w: 0.72 });
+        else { keys.push({ i, black: false, x: wi, w: 1, isRoot: pc === root % 12 }); wi++; }
+      }
+      return { keys, whites: wi, root };
+    }
+    function kbGeom() {
+      const W = customKb.clientWidth, H = customKb.clientHeight;
+      const { keys, whites, root } = kbLayout();
+      const whiteW = Math.min(26, W / whites);
+      return { W, H, whiteW, x0: (W - whiteW * whites) / 2, keys, root };
+    }
+    function drawCustomKb() {
+      const dpr = devicePixelRatio || 1, { W, H, whiteW, x0, keys, root } = kbGeom();
+      if (customKb.width !== W * dpr) { customKb.width = W * dpr; customKb.height = H * dpr; }
+      const g = customKb.getContext("2d");
+      g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      g.clearRect(0, 0, W, H);
+      g.translate(x0, 0);
+      for (const k of keys.filter(k => !k.black)) {
+        if (customSel.has(k.i)) { g.fillStyle = "rgba(53,194,161,.8)"; g.fillRect(k.x * whiteW + 1, 1, whiteW - 2, H - 2); }
+        g.strokeStyle = "rgba(53,61,70,.8)";
+        g.strokeRect(k.x * whiteW + 0.5, 0.5, whiteW - 1, H - 1);
+        if (k.isRoot) {                          // label the root keys so the anchor is obvious
+          g.fillStyle = customSel.has(k.i) ? "#0e2e26" : "rgba(154,166,178,.85)";
+          g.font = "9px system-ui";
+          g.textAlign = "center";
+          g.fillText(ROOTS[root], (k.x + 0.5) * whiteW, H - 4);
+        }
+      }
+      for (const k of keys.filter(k => k.black)) {
+        g.fillStyle = customSel.has(k.i) ? "rgba(53,194,161,.95)" : "rgba(53,61,70,.9)";
+        g.fillRect(k.x * whiteW, 0, k.w * whiteW, H * 0.6);
+      }
+      $("#customCount").textContent = `${customSel.size}/8`;
+    }
+    customKb.addEventListener("pointerdown", e => {
+      const r = customKb.getBoundingClientRect(), { H, whiteW, x0, keys } = kbGeom();
+      const x = e.clientX - r.left - x0, y = e.clientY - r.top;
+      const hit = keys.find(k => k.black && y < H * 0.6 && x >= k.x * whiteW && x < (k.x + k.w) * whiteW)
+               || keys.find(k => !k.black && x >= k.x * whiteW && x < (k.x + k.w) * whiteW);
+      if (!hit) return;
+      if (customSel.has(hit.i)) customSel.delete(hit.i);
+      else if (customSel.size < 8) customSel.add(hit.i);
+      drawCustomKb();
+    });
+    function showEditor(show, name) {
+      customEd.classList.toggle("show", show);
+      if (show) {
+        customNameIn.value = name || "";
+        customSel = new Set(name && customScales[name] ? customScales[name] : []);
+        requestAnimationFrame(drawCustomKb);
+      }
+    }
+    $("#customSave").addEventListener("click", () => {
+      if (!customSel.size) { msg("tap some notes first"); return; }
+      const name = (customNameIn.value || "custom").trim();
+      customScales[name] = [...customSel].sort((a, b) => a - b);
+      saveCustomScales();
+      const idx = SCALES.length + customNames().indexOf(name);
+      refreshScaleSel(idx);
+      setOrbaKey(null, idx);
+      msg(`custom scale "${name}" → Orba`);
+    });
+    $("#customDel").addEventListener("click", () => {
+      const name = customNameIn.value.trim();
+      if (!customScales[name]) return;
+      delete customScales[name];
+      saveCustomScales();
+      refreshScaleSel(0);
+      showEditor(false);
+      setOrbaKey(null, 0);
+    });
+
+    $("#keyChip").addEventListener("click", () => {
+      rootSel.value = orbaCtx.root ?? 0;
+      refreshScaleSel(orbaCtx.scale ?? 0);
+      showEditor((orbaCtx.scale ?? 0) >= SCALES.length, scaleName(orbaCtx.scale ?? 0));
+      keyOverlay.classList.add("open");
+    });
+    rootSel.addEventListener("change", () => {
+      setOrbaKey(Number(rootSel.value), null);
+      if (customEd.classList.contains("show")) drawCustomKb();   // keyboard re-anchors to the new root
+    });
+    scaleSel.addEventListener("change", () => {
+      if (scaleSel.value === "new") { showEditor(true, null); return; }
+      const idx = Number(scaleSel.value);
+      setOrbaKey(null, idx);
+      showEditor(idx >= SCALES.length, idx >= SCALES.length ? scaleName(idx) : null);
+    });
+    $("#keyClose").addEventListener("click", () => keyOverlay.classList.remove("open"));
+    keyOverlay.addEventListener("click", e => { if (e.target === keyOverlay) keyOverlay.classList.remove("open"); });
+
+    /* ---- BPM: tap the number to type an exact tempo ---- */
+    $("#seqBpm").addEventListener("click", () => {
+      const v = prompt("Tempo (BPM):", seqClock.bpm);
+      if (v && !isNaN(parseFloat(v))) { setBpm(parseFloat(v)); renderSeq(); }
+    });
+
+    /* ---- ⚙ Orba device settings ---- */
+    $("#orbaMidiMode").addEventListener("change", e => {
+      const mode = Number(e.target.value);
+      if (mode !== 0 && !confirm("This app's routing and looper require Per-part mode. MPE/single-channel will break them until switched back. Continue?")) {
+        e.target.value = "0";
+        return;
+      }
+      orbaCtx.midiMode = mode;
+      sendPayload(orba.setMidiMode(mode), "set midi mode");
+    });
+    $("#orbaPb").addEventListener("change", e => {
+      orbaCtx.pbRange = Number(e.target.value);
+      sendPayload(orba.setPitchBendRange(orbaCtx.pbRange), "set pb range");
+    });
+
+    /* on-demand device inventory: read the loaded filenames + loop CRCs.
+       PRINT ONLY, deliberately updates nothing (registers 0x26-0x2a are the
+       selector registers read back; 0x14 = per-part loop CRC table). */
+    $("#readFilesBtn").addEventListener("click", async () => {
+      const out = $("#deviceFilesDump");
+      if (!orbaReady()) { out.textContent = "no Orba connected"; return; }
+      out.textContent = "querying…";
+      const got = {};
+      const orig = onMidiBytes;
+      onMidiBytes = data => {
+        if (data[0] === 0xf0) {
+          const d = decodeMessage(data);
+          if (d?.crcOk && d.payload[1] === 0x03) {
+            const a = (d.payload[2] << 8) | d.payload[3];
+            if (a >= 0x26 && a <= 0x2a) got[a] = ascii(d.payload.slice(4));
+            if (a === 0x14) got[0x14] = Array.from(d.payload.slice(4, 20));
+          }
+        }
+        orig(data);
+      };
+      const labels = { 0x26: "drum ", 0x27: "bass ", 0x28: "chord", 0x29: "lead ", 0x2a: "song " };
+      for (const kind of Object.keys(SELECT_ADDRS)) { sendPayload(orba.getSelectedFile(kind), "read file"); await sleep(160); }
+      sendPayload(orba.getLooperCrcs(), "loop crcs");
+      await sleep(900);
+      onMidiBytes = orig;
+      const lines = [0x26, 0x27, 0x28, 0x29, 0x2a].map(a => `${labels[a]} ${got[a] ?? "(no reply)"}`);
+      if (got[0x14]) {
+        const crcs = [];
+        for (let i = 0; i < 16; i += 4) {
+          const c = got[0x14].slice(i, i + 4).map(b => b.toString(16).padStart(2, "0")).join("");
+          crcs.push(c === "ffffffff" ? "—" : c);
+        }
+        lines.push(`loops [${crcs.join(" · ")}]  (— = empty slot)`);
+      } else lines.push("loops (no reply)");
+      out.textContent = lines.join("\n");
+    });
+
+    $("#cfgBtn").addEventListener("click", () => {
+      renderMapList(); renderDevList(); refreshMapPresetList();
+      if (orbaCtx.midiMode != null) $("#orbaMidiMode").value = String(orbaCtx.midiMode);
+      if (orbaCtx.pbRange != null) $("#orbaPb").value = String([0, 12, 24, 48].includes(orbaCtx.pbRange) ? orbaCtx.pbRange : 48);
+      cfgOverlay.classList.add("open");
+    });
+    $("#cfgClose").addEventListener("click", () => { learning = false; learnBtn.textContent = "+ Learn a key…"; cfgOverlay.classList.remove("open"); });
+    cfgOverlay.addEventListener("click", e => { if (e.target === cfgOverlay) cfgOverlay.classList.remove("open"); });
+    els.instrSelect.addEventListener("change", () => {
+      const opt = els.instrSelect.selectedOptions[0];
+      setPreset(PARTS[state.part].key, els.instrSelect.value, opt?.dataset.name);
+    });
+    $("#libChip").addEventListener("click", () => { buildLibLists(); $("#libOverlay").classList.add("open"); });
+    $("#libClose").addEventListener("click", () => $("#libOverlay").classList.remove("open"));
+    $("#libOverlay").addEventListener("click", e => { if (e.target === $("#libOverlay")) $("#libOverlay").classList.remove("open"); });
+    $("#saveBtn").addEventListener("click", () => {
+      const name = $("#presetNameIn").value.trim();
+      if (!name) { msg("type a name first"); return; }
+      const store = loadPresetStore(); store[name] = snapshot(); savePresetStore(store);
+      $("#presetNameIn").value = "";
+      msg(`Saved "${name}"`);
+      buildLibLists();
+    });
+
+        async function loadLibrary() {
+      try {
+        const res = await fetch("orba-library.json", { cache: "no-store" });
+        state.library = await res.json();
+      } catch (e) { state.library = { songs: [], presets: {} }; }   // no library ships with the public app
+      populateInstruments(PARTS[state.part].key);
+    }
+
+    /* ===================================================================
+       Keep the screen awake while the page is open; otherwise the phone sleeps
+       and BLE/MIDI stops. The Screen Wake Lock auto-releases when the tab is
+       hidden, so re-acquire whenever the page becomes visible again.
+    =================================================================== */
+    let wakeLock = null;
+    async function acquireWakeLock() {
+      if (!("wakeLock" in navigator) || wakeLock) return;
+      try {
+        wakeLock = await navigator.wakeLock.request("screen");
+        wakeLock.addEventListener("release", () => { wakeLock = null; });
+      } catch (e) { /* not visible / blocked; retried on next visibility change or tap */ }
+    }
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") acquireWakeLock(); });
+
+    // Space = play/pause (global), unless you're typing in a field
+    document.addEventListener("keydown", e => {
+      if (e.code === "Space" && !/^(input|textarea|select)$/i.test(e.target.tagName) && !e.target.isContentEditable) {
+        e.preventDefault(); seqPlayStop();
+      }
+    });
+
+    /* ===================================================================
+       Note editor, per-track piano-roll. Your recorded take shows as a shadow;
+       the snapped (off/grid/groove) positions show solid on top, with a tie line
+       for the shift. Flip snap and watch notes move.
+    =================================================================== */
+    const noteEd = (() => {
+      const overlay = $("#noteEdOverlay"), canvas = $("#noteEdCanvas");
+      const titleEl = $("#noteEdTitle"), snapEl = $("#noteEdSnap"), footEl = $("#noteEdFoot");
+      const undoBtn = $("#noteEdUndo"), redoBtn = $("#noteEdRedo"), magnetBtn = $("#noteEdMagnet"), playBtn = $("#noteEdPlay"), delBtn = $("#noteEdDel"), soloBtn = $("#noteEdSolo"), selBtn = $("#noteEdSelect");
+      const LEFT = 38, MINLEN = 6;                  // gutter; min note length (ticks)
+      const DRUM = { 36:"Kick", 38:"Snare", 37:"Rim", 40:"Snr2", 42:"HH", 46:"OpenHH", 44:"Pedal", 39:"Clap", 43:"Tom", 45:"Tom", 47:"Tom", 49:"Crash", 51:"Ride" };
+      let pi = 0, pxPerTick = 0.2, panX = 0, panY = 0, raf = null, mode = "draw", magnet = true, selMode = false;
+      let vAuto = true, vRowH = 16, showAll = false;                 // vertical zoom (Shift+wheel) + show-all-rows toggle
+      let view = { lo: 48, hi: 72, rowH: 10, panY: 0 }, hitRects = [];
+      const selected = new Set();                                    // selected notes (onEv refs), marquee multi-select
+      const liveNotes = new Map();   // notes currently played INTO this part (live preview, not stored)
+      function liveInput(part, data) {
+        if (!overlay.classList.contains("open") || part !== pi) return;
+        const t = data[0] & 0xf0, n = data[1];
+        if (t === 0x90 && data[2] > 0) liveNotes.set(n, { vel: data[2], held: true });
+        else if (t === 0x80 || (t === 0x90 && data[2] === 0)) { const lv = liveNotes.get(n); if (lv) lv.held = false; }
+        else return;
+        draw();                                                       // persistent overlay, redraw on each played key
+      }
+      const U = [[], [], [], []], R = [[], [], [], []];   // per-part undo / redo (packed snapshots)
+      const part = () => seqEngine.parts[pi];
+      const snap16 = t => Math.round(t / SNAP_GRID) * SNAP_GRID;
+      const RTOP = 16;                                              // top strip: grab the loop braces here (mobile + desktop)
+      const POW2 = [4, 8, 16, 32].map(b => b * PPQN);
+      const snapPow2 = w => POW2.reduce((a, b) => Math.abs(b - w) < Math.abs(a - w) ? b : a, POW2[0]);   // nearest power-of-two length
+      const extent = () => { const p = part(); let mx = Math.max((p.loopStart || 0) + p.loopLen, 32 * PPQN); for (const e of p.events) if (e.tick > mx) mx = e.tick; return mx + BAR; };   // whole recording (≥32 beats, so a brace can always drag out) + 1 bar margin
+
+      // pair raw note-on/off into notes, carrying the underlying event refs + pinned flag
+      function notesOf(p) {
+        const sorted = p.events.map((e, i) => ({ e, i })).sort((a, b) => (a.e.tick - b.e.tick) || (a.i - b.i)).map(o => o.e);
+        const open = new Map(), out = [];
+        for (const ev of sorted) {
+          const type = ev.bytes[0] & 0xf0, n = ev.bytes[1];
+          if (type === 0x90 && ev.bytes[2] > 0) open.set(n, { note: n, vel: ev.bytes[2], rawStart: ev.tick, rawEnd: ev.tick, onEv: ev, offEv: null, manual: !!ev.manual });
+          else if (type === 0x80 || (type === 0x90 && ev.bytes[2] === 0)) { const o = open.get(n); if (o) { o.rawEnd = ev.tick; o.offEv = ev; out.push(o); open.delete(n); } }
+        }
+        for (const o of open.values()) { o.rawEnd = o.rawStart + SNAP_GRID; out.push(o); }
+        return out;
+      }
+
+      // --- undo/redo, per part, packed + persisted (300 deep) ---
+      const KEY = () => "orbaEdits_" + PARTS[pi].key;
+      const pack = () => JSON.stringify(part().events.map(e => [e.tick, e.bytes[0], e.bytes[1], e.bytes[2], e.manual ? 1 : 0]));
+      function applyPack(json) { part().events = JSON.parse(json).map(a => ({ tick: a[0], bytes: [a[1], a[2], a[3]], manual: a[4] ? true : undefined })); }
+      const saveStacks = () => { try { localStorage.setItem(KEY(), JSON.stringify({ u: U[pi], r: R[pi] })); } catch {} };
+      function loadStacks() { try { const s = JSON.parse(localStorage.getItem(KEY())); U[pi] = (s && s.u) || []; R[pi] = (s && s.r) || []; } catch { U[pi] = []; R[pi] = []; } }
+      const updBtns = () => { undoBtn.disabled = !U[pi].length; redoBtn.disabled = !R[pi].length; };
+      function recordUndo(pre) { U[pi].push(pre); while (U[pi].length > 300) U[pi].shift(); R[pi] = []; saveStacks(); updBtns(); }
+      function commitGesture(pre) { if (pack() === pre) return; recordUndo(pre); seqEngine._rebuild(part()); persistLoops(); renderSeq(); }
+      function undo() { if (!U[pi].length) return; R[pi].push(pack()); applyPack(U[pi].pop()); seqEngine._rebuild(part()); saveStacks(); persistLoops(); renderSeq(); updBtns(); selected.clear(); updDelBtn(); draw(); }
+      function redo() { if (!R[pi].length) return; U[pi].push(pack()); applyPack(R[pi].pop()); seqEngine._rebuild(part()); saveStacks(); persistLoops(); renderSeq(); updBtns(); selected.clear(); updDelBtn(); draw(); }
+
+      // --- mutations (everything you touch by hand becomes pinned) ---
+      const mark = nt => { if (nt.onEv) nt.onEv.manual = true; if (nt.offEv) nt.offEv.manual = true; };
+      const deleteNote = nt => { part().events = part().events.filter(e => e !== nt.onEv && e !== nt.offEv); };
+      function moveNote(nt, tick, pitch) {
+        const len = nt.offEv ? (nt.offEv.tick - nt.onEv.tick) : SNAP_GRID;
+        let t = Math.max(0, Math.min(extent() - 1, magnet ? snap16(tick) : Math.round(tick)));
+        nt.onEv.tick = t; if (nt.offEv) nt.offEv.tick = t + len;
+        if (pitch != null) { nt.onEv.bytes[1] = pitch; if (nt.offEv) nt.offEv.bytes[1] = pitch; }
+        mark(nt); nt.rawStart = t; nt.rawEnd = t + len; nt.note = nt.onEv.bytes[1];
+      }
+      function resizeNote(nt, anchor, curTick) {        // bidirectional: drag past the anchor flips start/end
+        if (!nt.offEv) return;
+        const c = magnet ? snap16(curTick) : Math.round(curTick);
+        const s = Math.min(anchor, c), en = Math.max(anchor, c, s + MINLEN);
+        nt.onEv.tick = s; nt.offEv.tick = en; mark(nt); nt.rawStart = s; nt.rawEnd = en;
+      }
+
+      // --- draw ---
+      const clampPan = () => { const total = extent() * pxPerTick, vw = canvas.clientWidth - LEFT; panX = Math.max(0, Math.min(panX, Math.max(0, total - vw))); };
+      function fit() { pxPerTick = (canvas.clientWidth - LEFT) / extent(); panX = 0; vAuto = true; panY = 0; draw(); }
+      function draw() {
+        if (!overlay.classList.contains("open")) return;
+        const p = part(), quant = p.quant, notes = notesOf(p), drum = PARTS[pi].key === "drum";
+        let rowList;
+        if (showAll) { rowList = []; for (let n = (drum ? 51 : 84); n >= (drum ? 35 : 36); n--) rowList.push(n); }   // full range
+        else {                                                        // fit: ONLY rows that have notes (drum + melodic alike; "rows" toggles to the full range)
+          const s = new Set(); for (const nt of notes) s.add(nt.note); for (const n of liveNotes.keys()) s.add(n);
+          if (!s.size) { if (drum) { s.add(38); s.add(36); } else { for (let n = 72; n >= 48; n--) s.add(n); } }   // empty default: kick+snare / 2 octaves to draw in
+          rowList = [...s].sort((a, b) => b - a);
+        }
+        const rows = rowList.length, rowOf = new Map(rowList.map((n, i) => [n, i]));
+        const dpr = devicePixelRatio || 1, W = canvas.clientWidth, H = canvas.clientHeight;
+        canvas.width = W * dpr; canvas.height = H * dpr;
+        const g = canvas.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
+        const rowH = vAuto ? (H / rows) : vRowH, S = p.loopStart || 0, L = p.loopLen, EXT = extent();
+        panY = Math.max(0, Math.min(panY, Math.max(0, rows * rowH - H)));    // clamp vertical scroll
+        view = { rowList, rowOf, rowH, panY };
+        const x = t => LEFT + t * pxPerTick - panX, y = n => (rowOf.has(n) ? rowOf.get(n) : 0) * rowH - panY;
+        const BLACK = new Set([1, 3, 6, 8, 10]), NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+        g.save(); g.beginPath(); g.rect(LEFT, 0, W - LEFT, H); g.clip();      // clip to the note area, keep notes off the label gutter
+        rowList.forEach((n, i) => { const ry = i * rowH - panY; if (ry > H || ry + rowH < 0) return; g.fillStyle = (drum ? (i % 2) : BLACK.has(n % 12)) ? "#14171d" : "#0f1217"; g.fillRect(LEFT, ry, W - LEFT, rowH); });
+        for (let t = 0; t <= EXT; t += SNAP_GRID) { const xx = x(t); if (xx < LEFT - 1 || xx > W) continue; g.strokeStyle = t % BAR === 0 ? "#3a4250" : t % PPQN === 0 ? "#272d36" : "#191d24"; g.lineWidth = t % BAR === 0 ? 1.4 : 1; g.beginPath(); g.moveTo(xx, 0); g.lineTo(xx, H); g.stroke(); }
+        hitRects = [];
+        for (const nt of notes) {
+          const sStart = nt.manual ? nt.rawStart : snapTick(nt.rawStart, nt.note, quant), delta = sStart - nt.rawStart;
+          const w = Math.max(3, (nt.rawEnd - nt.rawStart) * pxPerTick), ry = y(nt.note) + 1.5, h = Math.max(3, rowH - 3), rx = x(nt.rawStart), sx = x(sStart);
+          if (!nt.manual) {     // recorded, snap-following: dashed ghost(raw) + tie + solid(snapped)
+            g.fillStyle = "rgba(108,120,138,.16)"; g.fillRect(rx, ry, w, h);
+            g.setLineDash([3, 2]); g.strokeStyle = "rgba(150,162,182,.7)"; g.lineWidth = 1; g.strokeRect(rx + .5, ry + .5, w - 1, h - 1); g.setLineDash([]);
+            if (quant && delta) { g.strokeStyle = "rgba(190,205,230,.75)"; g.beginPath(); g.moveTo(rx + w / 2, ry + h / 2); g.lineTo(sx + w / 2, ry + h / 2); g.stroke(); }
+          }
+          g.fillStyle = nt.manual ? `hsl(150,55%,${42 + nt.vel / 127 * 22}%)`     // pinned = green
+                                  : `hsl(${quant === 2 ? 30 : 200},85%,${46 + nt.vel / 127 * 22}%)`;  // snapped = cyan/amber
+          g.fillRect(sx, ry, w, h);
+          if (nt.onEv === hoverOnEv) {                  // hover feedback
+            if (hoverEdge) { g.fillStyle = "rgba(255,255,255,.9)"; g.fillRect(sx + w - 3, ry, 3, h); }   // resize handle
+            else { g.strokeStyle = "rgba(255,255,255,.9)"; g.lineWidth = 1.5; g.strokeRect(sx + .75, ry + .75, w - 1.5, h - 1.5); }
+          }
+          if (selected.has(nt.onEv)) { g.strokeStyle = "#ffd24a"; g.lineWidth = 2; g.strokeRect(sx + 1, ry + 1, w - 2, h - 2); }   // selected
+          hitRects.push({ note: nt, x: sx, w, y: ry, h });
+        }
+        for (const [ln, lv] of liveNotes) {                           // live-input overlay: played keys stay until you reopen
+          const a = lv.held ? 1 : 0.72, ly = y(ln);                   // held = brightest; released stays clearly visible
+          g.fillStyle = `rgba(90,230,150,${0.26 * a})`; g.fillRect(LEFT, ly, W - LEFT, rowH);                        // row band
+          g.fillStyle = `rgba(140,255,190,${0.95 * a})`; g.fillRect(LEFT, ly + rowH / 2 - 1.5, W - LEFT, 3);          // center line
+        }
+        const phTick = seqClock.running ? (((liveTick() - seqLoopBase) % L) + L) % L : (((seqPlayheadTick % L) + L) % L);
+        const ph = x(S + phTick);
+        g.strokeStyle = seqClock.running ? "#e8854a" : "#6f7787"; g.lineWidth = 1.2;
+        g.beginPath(); g.moveTo(ph, 0); g.lineTo(ph, H); g.stroke();
+        g.fillStyle = g.strokeStyle; g.beginPath(); g.moveTo(ph - 4, 0); g.lineTo(ph + 4, 0); g.lineTo(ph, 6); g.closePath(); g.fill();
+        if (act && act.type === "marquee") {                          // box-select rectangle
+          const mx = Math.min(act.x0, act.x1), my = Math.min(act.y0, act.y1);
+          g.setLineDash([4, 3]); g.strokeStyle = "#ffd24a"; g.lineWidth = 1; g.strokeRect(mx, my, Math.abs(act.x1 - act.x0), Math.abs(act.y1 - act.y0));
+          g.fillStyle = "rgba(255,210,74,.10)"; g.fillRect(mx, my, Math.abs(act.x1 - act.x0), Math.abs(act.y1 - act.y0)); g.setLineDash([]);
+        }
+        const xS = x(S), xE = x(S + L);                               // loop window: dim outside it, draw the ruler + braces + grab tabs
+        g.fillStyle = "rgba(7,9,13,.6)";
+        if (xS > LEFT) g.fillRect(LEFT, 0, Math.min(xS, W) - LEFT, H);
+        if (xE < W) g.fillRect(Math.max(xE, LEFT), 0, W - Math.max(xE, LEFT), H);
+        g.fillStyle = "rgba(255,255,255,.05)"; g.fillRect(LEFT, 0, W - LEFT, RTOP);                                 // ruler strip, drag here to move/resize the loop
+        if (xE > xS) { g.fillStyle = "rgba(255,210,74,.32)"; g.fillRect(Math.max(LEFT, xS), 0, Math.min(xE, W) - Math.max(LEFT, xS), RTOP); }   // window body in the ruler = drag to slide
+        g.strokeStyle = "#ffd24a"; g.lineWidth = 2; g.beginPath(); g.moveTo(xS, 0); g.lineTo(xS, H); g.moveTo(xE, 0); g.lineTo(xE, H); g.stroke();
+        g.fillStyle = "#ffd24a"; g.fillRect(xS - 1, 0, 7, RTOP); g.fillRect(xE - 6, 0, 7, RTOP);
+        g.restore();
+        g.fillStyle = "#0c0e12"; g.fillRect(0, 0, LEFT, H);            // opaque label gutter ON TOP, notes never cover the names
+        g.fillStyle = "#5a6472"; g.font = "9px system-ui"; g.textBaseline = "middle";
+        rowList.forEach((n, i) => { const ly = i * rowH - panY + rowH / 2; if (ly < -4 || ly > H + 4) return; if (drum || n % 12 === 0 || rows < 22) g.fillText(drum ? (DRUM[n] || n) : (n % 12 === 0 ? NAMES[0] + (n / 12 - 1) : NAMES[n % 12]), 2, ly); });
+        const tickMs = 60000 / seqClock.bpm / PPQN;
+        soloBtn.classList.toggle("on", soloIdx() === pi);             // reflect solo state
+        let sum = 0, rec = 0; for (const nt of notes) if (!nt.manual) { sum += Math.abs(nt.rawStart - snap16(nt.rawStart)); rec++; }
+        footEl.textContent = `${PARTS[pi].name} · ${L / PPQN} beats · ${notes.length} notes${selected.size ? " · " + selected.size + " sel" : ""} · recorded ${(rec ? sum / rec * tickMs : 0).toFixed(0)}ms off grid · ${mode}`;
+      }
+
+      // --- header controls ---
+      function renderSnapBtns() {
+        snapEl.innerHTML = "";
+        ["off", "grid", "groove"].forEach((lbl, m) => { const b = document.createElement("button"); b.className = "x" + (part().quant === m ? " on" : ""); b.textContent = lbl; b.addEventListener("click", () => { setLaneSnap(pi, m); renderSnapBtns(); draw(); renderSeq(); }); snapEl.append(b); });
+      }
+      function setMode(md) { mode = md; $("#noteEdDraw").classList.toggle("on", md === "draw"); $("#noteEdErase").classList.toggle("on", md === "erase"); }
+
+      // --- pointer: dbl-click create (drag = length, either direction) / move / resize / erase / pan / pinch ---
+      function locate(e) { const r = canvas.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top; let tick = Math.max(0, Math.min(extent() - 1, (px - LEFT + panX) / pxPerTick)); const ri = Math.max(0, Math.min(view.rowList.length - 1, Math.floor((py + view.panY) / view.rowH))); let note = view.rowList[ri] ?? 60; return { px, py, tick, note }; }
+      function noteAt(px, py) { for (let i = hitRects.length - 1; i >= 0; i--) { const r = hitRects[i]; if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h) return { note: r.note, edge: r.w > 16 && px > r.x + r.w - 9 }; } return null; }
+      const minPx = () => (canvas.clientWidth - LEFT) / extent();   // fit = most zoomed-out
+      function zoomAt(px, factor) { const tickU = (px - LEFT + panX) / pxPerTick; pxPerTick = Math.max(minPx(), Math.min(6, pxPerTick * factor)); panX = tickU * pxPerTick - (px - LEFT); clampPan(); draw(); }
+      const pts = new Map(); const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+      let act = null, preSnap = null, pinch = null, lastT = 0, lastX = 0, lastY = 0, hoverOnEv = null, hoverEdge = false;
+      const updDelBtn = () => { delBtn.disabled = selected.size === 0; };
+      function deleteSelected() {
+        if (!selected.size) return;
+        const pre = pack();
+        const rm = new Set();
+        for (const nt of notesOf(part())) if (selected.has(nt.onEv)) { rm.add(nt.onEv); if (nt.offEv) rm.add(nt.offEv); }
+        part().events = part().events.filter(e => !rm.has(e));
+        commitGesture(pre); selected.clear(); updDelBtn(); draw();
+      }
+      canvas.addEventListener("pointerdown", e => {
+        canvas.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (pts.size === 2) { const p = [...pts.values()], r = canvas.getBoundingClientRect(); pinch = { d0: dist(p[0], p[1]) || 1, px0: pxPerTick, panX0: panX, mid: (p[0].x + p[1].x) / 2 - r.left }; act = null; return; }
+        if (pts.size > 2) return;
+        const L = locate(e), hit = noteAt(L.px, L.py); preSnap = pack();
+        const dbl = (e.timeStamp - lastT < 350) && Math.hypot(e.clientX - lastX, e.clientY - lastY) < 24;
+        lastT = e.timeStamp; lastX = e.clientX; lastY = e.clientY;
+        if (L.py < RTOP) {                                      // top strip → drag the loop window (move body / resize a brace to power-of-two)
+          const Sw = part().loopStart || 0, Lw = part().loopLen, xS = LEFT + Sw * pxPerTick - panX, xE = LEFT + (Sw + Lw) * pxPerTick - panX;
+          if (Math.abs(L.px - xS) < 14) act = { type: "winL", end: Sw + Lw };
+          else if (Math.abs(L.px - xE) < 14) act = { type: "winR", start: Sw };
+          else act = { type: "winMove", grab: L.tick, start0: Sw };
+          return;
+        }
+        if (mode === "erase") { if (hit) { deleteNote(hit.note); seqEngine._rebuild(part()); draw(); act = { type: "edit" }; } else act = { type: "pan", cx: e.clientX }; return; }
+        if (selMode) { act = { type: "marquee", x0: L.px, y0: L.py, x1: L.px, y1: L.px, moved: false }; return; }   // one-shot box-select (mobile)
+        if (hit) act = hit.edge ? { type: "resize", note: hit.note, anchor: hit.note.onEv.tick } : { type: "move", note: hit.note, shift: e.shiftKey };
+        else if (e.shiftKey) act = { type: "marquee", x0: L.px, y0: L.py, x1: L.px, y1: L.px, moved: false };   // shift-drag = box select
+        else if (dbl) {                                          // double-click empty → create note; drag sets length
+          const t = magnet ? snap16(L.tick) : Math.round(L.tick);
+          const onEv = { tick: t, bytes: [0x90, L.note, 100], manual: true }, offEv = { tick: Math.min(extent(), t + SNAP_GRID), bytes: [0x80, L.note, 0], manual: true };
+          part().events.push(onEv, offEv); seqEngine._rebuild(part()); draw();
+          act = { type: "create", anchor: t, onEv, offEv };
+        }
+        else {                                                  // empty area: grab the playhead if near its line (touch-friendly), else pan
+          const Sp = part().loopStart || 0, Lp = part().loopLen, phX = LEFT + (Sp + seqPlayheadTick) * pxPerTick - panX;
+          if (!seqClock.running && Math.abs(L.px - phX) < 12) { act = { type: "playhead" }; seqPlayheadTick = Math.max(0, Math.min(Lp - 1, (magnet ? snap16(L.tick) : Math.round(L.tick)) - Sp)); draw(); }
+          else act = { type: "pan", cx: e.clientX, downTick: L.tick, moved: false, ctrl: e.ctrlKey || e.metaKey };
+        }
+      });
+      canvas.addEventListener("pointermove", e => {
+        if (pts.has(e.pointerId)) pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (pinch && pts.size >= 2) { const p = [...pts.values()], ratio = dist(p[0], p[1]) / pinch.d0, tickU = (pinch.mid - LEFT + pinch.panX0) / pinch.px0; pxPerTick = Math.max(minPx(), Math.min(6, pinch.px0 * ratio)); panX = tickU * pxPerTick - (pinch.mid - LEFT); clampPan(); draw(); return; }
+        if (!act) {                                    // hover feedback (mouse): resize/move cursor + edge highlight
+          const L = locate(e), hit = noteAt(L.px, L.py), on = hit ? hit.note.onEv : null, he = hit ? hit.edge : false;
+          canvas.style.cursor = hit ? (he ? "ew-resize" : "move") : "default";
+          if (on !== hoverOnEv || he !== hoverEdge) { hoverOnEv = on; hoverEdge = he; draw(); }
+          return;
+        }
+        if (act.type === "marquee") { const r = canvas.getBoundingClientRect(); act.x1 = e.clientX - r.left; act.y1 = e.clientY - r.top; act.moved = true; draw(); return; }
+        if (act.type === "pan") { act.moved = true; panX -= e.clientX - act.cx; act.cx = e.clientX; clampPan(); draw(); return; }
+        if (act.type === "winMove" || act.type === "winL" || act.type === "winR") {
+          const L2 = locate(e), tk = magnet ? snap16(L2.tick) : Math.round(L2.tick);
+          if (act.type === "winMove") { let ns = act.start0 + (L2.tick - act.grab); ns = Math.max(0, magnet ? snap16(ns) : Math.round(ns)); seqEngine.setPartWindow(pi, ns, part().loopLen); }
+          else if (act.type === "winR") { seqEngine.setPartWindow(pi, act.start, snapPow2(tk - act.start)); }
+          else { const len = snapPow2(act.end - tk); seqEngine.setPartWindow(pi, Math.max(0, act.end - len), len); }
+          act.moved = true; draw(); return;
+        }
+        const L = locate(e);
+        act.moved = true;
+        if (act.type === "playhead") { const Sp = part().loopStart || 0; seqPlayheadTick = Math.max(0, Math.min(part().loopLen - 1, (magnet ? snap16(L.tick) : Math.round(L.tick)) - Sp)); draw(); }
+        else if (act.type === "create") { const cur = magnet ? snap16(L.tick) : Math.round(L.tick); const s = Math.min(act.anchor, cur), en = Math.max(act.anchor, cur, s + MINLEN); act.onEv.tick = s; act.offEv.tick = en; seqEngine._rebuild(part()); draw(); }
+        else if (act.type === "move") { moveNote(act.note, L.tick, L.note); seqEngine._rebuild(part()); draw(); }
+        else if (act.type === "resize") { resizeNote(act.note, act.anchor, L.tick); seqEngine._rebuild(part()); draw(); }
+      });
+      canvas.addEventListener("pointerleave", () => { if (!act && (hoverOnEv || hoverEdge)) { hoverOnEv = null; hoverEdge = false; canvas.style.cursor = "default"; draw(); } });
+      canvas.addEventListener("pointerup", e => {
+        pts.delete(e.pointerId); if (pts.size < 2) pinch = null;
+        if (act && act.type === "marquee") {                                                                 // box select: notes intersecting the box
+          const mx = Math.min(act.x0, act.x1), Mx = Math.max(act.x0, act.x1), my = Math.min(act.y0, act.y1), My = Math.max(act.y0, act.y1);
+          selected.clear();
+          for (const r of hitRects) if (r.x < Mx && r.x + r.w > mx && r.y < My && r.y + r.h > my) selected.add(r.note.onEv);
+          updDelBtn();
+          if (selMode) { selMode = false; selBtn.classList.remove("on"); }                                   // one-shot: select-mode turns itself off
+        }
+        else if (act && !act.moved && (act.type === "move" || act.type === "resize")) {                       // tap a note = select (shift = toggle)
+          if (act.shift) { selected.has(act.note.onEv) ? selected.delete(act.note.onEv) : selected.add(act.note.onEv); }
+          else { selected.clear(); selected.add(act.note.onEv); }
+          updDelBtn();
+        }
+        else if (act && act.type === "pan" && !act.moved) { if (selected.size) { selected.clear(); updDelBtn(); } if (act.ctrl && !seqClock.running) { const Sp = part().loopStart || 0; seqPlayheadTick = Math.max(0, Math.min(part().loopLen - 1, (magnet ? snap16(act.downTick) : Math.round(act.downTick)) - Sp)); } }   // Ctrl+click empty = playhead (loop-local, snap to 16th if magnet on); plain click deselects
+        else if (act && act.type.startsWith("win")) { persistLoops(); renderSeq(); }
+        else if (act && act.type !== "pan" && act.type !== "marquee" && act.type !== "playhead" && preSnap != null) commitGesture(preSnap);
+        if (pts.size === 0) { act = null; preSnap = null; }
+        draw();                                                                                              // redraw with act cleared → marquee box disappears
+      });
+      canvas.addEventListener("pointercancel", e => { pts.delete(e.pointerId); if (pts.size < 2) pinch = null; if (pts.size === 0) { act = null; draw(); } });
+      canvas.addEventListener("wheel", e => {
+        e.preventDefault();
+        const r = canvas.getBoundingClientRect();
+        if (e.shiftKey) {                                          // Shift+wheel = vertical zoom (row height), toward the cursor
+          const py = e.clientY - r.top;
+          if (vAuto) { vRowH = view.rowH; vAuto = false; }
+          const rowU = (py + panY) / vRowH;
+          vRowH = Math.max(6, Math.min(2000, vRowH * (e.deltaY < 0 ? 1.12 : 1 / 1.12)));   // no low cap that would jump from the fit height
+          panY = rowU * vRowH - py; draw();
+        } else zoomAt(e.clientX - r.left, e.deltaY < 0 ? 1.12 : 1 / 1.12);
+      }, { passive: false });
+
+      let prevRunning = false;
+      function updatePlayBtn() { const gl = seqClock.running ? "⏸" : "▶"; if (playBtn.textContent !== gl) playBtn.textContent = gl; }
+      function loop() {
+        if (!overlay.classList.contains("open")) { raf = null; return; }
+        if (seqClock.running !== prevRunning) { prevRunning = seqClock.running; updatePlayBtn(); draw(); }   // redraw playhead on play/stop
+        if (seqClock.running) draw();                                                                       // animate playhead (live input redraws itself on change)
+        raf = requestAnimationFrame(loop);
+      }
+      function open(p) { pi = p; loadStacks(); updBtns(); selected.clear(); updDelBtn(); liveNotes.clear(); selMode = false; selBtn.classList.remove("on"); setMode("draw"); magnetBtn.classList.toggle("on", magnet); $("#noteEdAll").classList.toggle("on", showAll); titleEl.textContent = PARTS[pi].name + " · notes"; $("#noteEdLen").value = String(part().loopLen / PPQN); renderSnapBtns(); overlay.classList.add("open"); requestAnimationFrame(() => { fit(); if (!raf) raf = requestAnimationFrame(loop); }); }
+      function close() { overlay.classList.remove("open"); }
+
+      $("#noteEdZoomIn").addEventListener("click", () => zoomAt(canvas.clientWidth / 2, 1.6));
+      $("#noteEdZoomOut").addEventListener("click", () => zoomAt(canvas.clientWidth / 2, 1 / 1.6));
+      $("#noteEdFit").addEventListener("click", fit);
+      $("#noteEdClose").addEventListener("click", close);
+      $("#noteEdDraw").addEventListener("click", () => setMode("draw"));
+      $("#noteEdErase").addEventListener("click", () => setMode("erase"));
+      selBtn.addEventListener("click", () => { selMode = !selMode; selBtn.classList.toggle("on", selMode); });
+      magnetBtn.addEventListener("click", () => { magnet = !magnet; magnetBtn.classList.toggle("on", magnet); draw(); });
+      $("#noteEdAll").addEventListener("click", () => { showAll = !showAll; $("#noteEdAll").classList.toggle("on", showAll); fit(); });
+      $("#noteEdLen").addEventListener("change", () => { seqEngine.setPartBeats(pi, Number($("#noteEdLen").value)); persistLoops(); renderSeq(); fit(); });   // per-track loop length
+      $("#noteEdWinL").addEventListener("click", () => { const p = part(); seqEngine.setPartWindow(pi, Math.max(0, (p.loopStart || 0) - BAR), p.loopLen); persistLoops(); renderSeq(); draw(); });   // push the loop window back a bar
+      $("#noteEdWinR").addEventListener("click", () => { const p = part(); seqEngine.setPartWindow(pi, Math.min(Math.max(0, 32 * PPQN - p.loopLen), (p.loopStart || 0) + BAR), p.loopLen); persistLoops(); renderSeq(); draw(); });   // push the loop window forward a bar
+      playBtn.addEventListener("click", () => { seqPlayStop(); updatePlayBtn(); });
+      $("#noteEdStart").addEventListener("click", () => { seqPlayheadTick = 0; if (seqClock.running) { seqStop(); seqStart(); } else draw(); });   // back to start (rewind if playing)
+      soloBtn.addEventListener("click", () => { soloToggle(pi); draw(); });
+      undoBtn.addEventListener("click", undo);
+      redoBtn.addEventListener("click", redo);
+      delBtn.addEventListener("click", deleteSelected);
+      document.addEventListener("keydown", e => {
+        if (!overlay.classList.contains("open")) return;
+        if ((e.key === "Delete" || e.key === "Backspace") && !/^(input|textarea|select)$/i.test(e.target.tagName)) { e.preventDefault(); deleteSelected(); }
+      });
+      overlay.addEventListener("click", e => { if (e.target === overlay) close(); });
+      return { open, close, draw, liveInput };
+    })();
+    function openNoteEd(pi) { noteEd.open(pi); }
+
+    // Module scope is not global; expose these hooks on window for console/live debugging.
+    // Includes the orba-protocol namespace and the looper internals.
+    Object.assign(window, {
+      orba, state, PARTS, sendPayload, sendToOrba, readDeviceState, render, selectPart, transport, setFxFor, forwardMidi,
+      // looper / sequencer (module consts aren't global; expose for live debugging)
+      seqEngine, seqClock, seqStart, seqStop, seqPlayStop, seqRecTap, seqRecHold, seqTapTempo, setBpm, renderSeq, openNoteEd, noteEd,
+    });
+
+    // boot
+    loadLibrary();
+    selectPart(0);
+    renderSeq();
+    updateConnUI();
+    if (!navigator.bluetooth) els.connectBtn.style.display = "none";
+    msg(navigator.bluetooth ? "Plug in the Orba over USB, or tap Connect for Bluetooth." : "Plug in the Orba over USB to start.");
+    initMidi();   // auto-detect Orba-over-USB + auto-forward any MIDI keyboard
+    (function trackPublishedUse() {
+      const expectedOrigin = "https://holofermes.github.io";
+      const expectedPathPrefix = "/orba-console/";
+      const isExpectedOrigin = location.origin === expectedOrigin;
+      const isExpectedPath = location.pathname === expectedPathPrefix ||
+        location.pathname === `${expectedPathPrefix}index.html` ||
+        location.pathname.startsWith(expectedPathPrefix);
+      if (!isExpectedOrigin || !isExpectedPath) return;
+
+      const params = new URLSearchParams();
+      params.set("site", "orba-console");
+      params.set("v", "1");
+      params.set("path", location.pathname);
+      if (location.search) params.set("search", location.search.slice(0, 500));
+      if (document.referrer) params.set("page_referrer", document.referrer.slice(0, 500));
+      params.set("t", Date.now().toString(36));
+
+      const pixel = new Image(1, 1);
+      pixel.decoding = "async";
+      pixel.referrerPolicy = "strict-origin-when-cross-origin";
+      pixel.src = `https://fabiopiparo.com/pixel.gif?${params.toString()}`;
+    })();
+    if ("serviceWorker" in navigator) {
+      const hadController = !!navigator.serviceWorker.controller;
+      navigator.serviceWorker.register("sw.js").catch(() => {});
+      navigator.serviceWorker.addEventListener("controllerchange", () => { if (hadController) location.reload(); });   // new deploy takes over -> refresh
+    }
+    acquireWakeLock();
+  </script>
+</body>
+</html>
