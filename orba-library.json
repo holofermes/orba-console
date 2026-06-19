@@ -1,0 +1,1032 @@
+{
+ "presets": {
+  "drum": [
+   {
+    "filename": "1981_2cb39746ce774deaa35e855b007cc884.artipreset",
+    "name": "1981"
+   },
+   {
+    "filename": "AllOut_31797e74b2a543a3b3473cda9eab1754.artipreset",
+    "name": "All Out"
+   },
+   {
+    "filename": "Ambeeant_684670cfc2b341428a14c9113471b011.artipreset",
+    "name": "Ambeeant"
+   },
+   {
+    "filename": "Bedroom_26d335a7130349859cd7c355db908165.artipreset",
+    "name": "Bedroom"
+   },
+   {
+    "filename": "BoomyBooms_d157658f3aad46b4904ddd91f2f5072e.artipreset",
+    "name": "Boomy Booms"
+   },
+   {
+    "filename": "NovaPercussion_1c92a92dd1f44b298c388fc72f0d1080.artipreset",
+    "name": "Bossa"
+   },
+   {
+    "filename": "Cartridge_180bb4ec195246a2b18ddfd62c273a60.artipreset",
+    "name": "Cartridge"
+   },
+   {
+    "filename": "Bomb_a5cc31e0304d407980809a8e0ba2517b.artipreset",
+    "name": "Console"
+   },
+   {
+    "filename": "DaydreamDrums_5cf85bae8b134c9eb87168a887f2470e.artipreset",
+    "name": "Daydream"
+   },
+   {
+    "filename": "Dragonfruit_8221dd734c3046af9f15f685441d8735.artipreset",
+    "name": "Dragonfruit"
+   },
+   {
+    "filename": "EyesClosed_994674e51deb4b0c95acf7d45d1e76fa.artipreset",
+    "name": "Eyes Closed"
+   },
+   {
+    "filename": "FakearDrum_42d5ad2bff59427eac2cb9bb8575742b.artipreset",
+    "name": "Fakear: Round Trip"
+   },
+   {
+    "filename": "Faux_e2bc086075db474698630301dfb886a9.artipreset",
+    "name": "Faux"
+   },
+   {
+    "filename": "Grapefruit_2cbf666926a340128288c662b20aa99d.artipreset",
+    "name": "Grapefruit"
+   },
+   {
+    "filename": "Hands_bdcb4c2c06c24b369ce376444d4ae7ee.artipreset",
+    "name": "Hand Drum"
+   },
+   {
+    "filename": "Airhorn_0bba4975d6ac4bbb8d65907b2897a0e0.artipreset",
+    "name": "Island"
+   },
+   {
+    "filename": "Hard_23199db8eb774d6785b6834706db614f.artipreset",
+    "name": "Jackhammer"
+   },
+   {
+    "filename": "JiveKit_e53cec68aa6340e1b1bfa4491b7efe22.artipreset",
+    "name": "Jive"
+   },
+   {
+    "filename": "Lofi_93ad21c3f8f94cb893d4e13ac9087b79.artipreset",
+    "name": "Lofi"
+   },
+   {
+    "filename": "Past_bf34291e74474566af9a9dbae2288860.artipreset",
+    "name": "Millenium"
+   },
+   {
+    "filename": "Minimax_75f880d12c524246b055cced43b5d94b.artipreset",
+    "name": "Minimax"
+   },
+   {
+    "filename": "Noir_ef78968196e34bcb9eca2b5651dd9170.artipreset",
+    "name": "Noir"
+   },
+   {
+    "filename": "Ohm_a03ee8ccfe6e4073895e2a6ff9afdbc4.artipreset",
+    "name": "Ohm"
+   },
+   {
+    "filename": "Orba_9c912a95b3804dfc8d641f9d66b17a28.artipreset",
+    "name": "Orba"
+   },
+   {
+    "filename": "OrbaChill_5793e2d7b46448bfb54d78c4bfb10822.artipreset",
+    "name": "Orba + Chill"
+   },
+   {
+    "filename": "Orba2Drums_2baa8a91a56d4b97aba80e3167b21e2f.artipreset",
+    "name": "Orba 2 Drum"
+   },
+   {
+    "filename": "Pieces_1261f73a42f34cc9a8c781fafdff5c6e.artipreset",
+    "name": "Pieces"
+   },
+   {
+    "filename": "Retro_d5ba73f8575a449695559aced1bd29bf.artipreset",
+    "name": "Retro"
+   },
+   {
+    "filename": "ClubKit_b5ef15b3f1714761b144abe261210811.artipreset",
+    "name": "Revolve"
+   },
+   {
+    "filename": "TrinketsKit_f705a5c88ce14cefba8f8e3ce03e73a2.artipreset",
+    "name": "Taetro: Trinkets"
+   },
+   {
+    "filename": "Flammy_c132665311844ebc920f0b26c4d4171d.artipreset",
+    "name": "The ATL"
+   },
+   {
+    "filename": "ThumKit_cb006eac0acc48c5bc8feef9d0b7b880.artipreset",
+    "name": "Tom Thum: Kit"
+   },
+   {
+    "filename": "VinylDrums_9bb87a0f0d7044eaa5577c472cdaf9a3.artipreset",
+    "name": "Vinyl"
+   },
+   {
+    "filename": "NatureKit_fa7f54acfd71438894a1653901a71714.artipreset",
+    "name": "Zen"
+   }
+  ],
+  "bass": [
+   {
+    "filename": "1981_2e7c0249d3f44ff5b098ddb16506e3ec.artipreset",
+    "name": "1981"
+   },
+   {
+    "filename": "80s_6e57523a8b834ebea813ee7dbddf9df0.artipreset",
+    "name": "80s"
+   },
+   {
+    "filename": "AllOut_04f5e3aface24bcf8107de0a063c6712.artipreset",
+    "name": "All Out"
+   },
+   {
+    "filename": "Ambeeant_972203c475944d82ba230ee88401fcfa.artipreset",
+    "name": "Ambeeant"
+   },
+   {
+    "filename": "Banana_e77360b9ba9e4f3aadc669161bf2d64c.artipreset",
+    "name": "Banana"
+   },
+   {
+    "filename": "Bedroom_7c7d28afc2454134aa4b7628219dc830.artipreset",
+    "name": "Bedroom"
+   },
+   {
+    "filename": "BoomyBooms_dde94c42587b49949388b831f63d7ec3.artipreset",
+    "name": "Boomy Booms"
+   },
+   {
+    "filename": "Cartridge_2ad5b84456284fb1afe382d0d49ff4f2.artipreset",
+    "name": "Cartridge"
+   },
+   {
+    "filename": "Life_7e5c67da33944dec8c53faab4281cc19.artipreset",
+    "name": "Console"
+   },
+   {
+    "filename": "DaydreamBass_9b14c3f0604c479db18f7c8a126425f9.artipreset",
+    "name": "Daydream"
+   },
+   {
+    "filename": "Dope_c6d44ee7aa74449f8aac133d51b8c627.artipreset",
+    "name": "Dope"
+   },
+   {
+    "filename": "ElectricBass_d7cc1ce43b404abaa93e5794b99d86fa.artipreset",
+    "name": "Electric Bass"
+   },
+   {
+    "filename": "Electro_d69e9100866f40e8869765d58eca4ae0.artipreset",
+    "name": "Electro"
+   },
+   {
+    "filename": "ShakeTheWalls_fc7128ddfc1c4a199d512b4906139d85.artipreset",
+    "name": "Epic"
+   },
+   {
+    "filename": "EyesClosed_75ab9952be3f4e87bee23b96ee9d5cd9.artipreset",
+    "name": "Eyes Closed"
+   },
+   {
+    "filename": "Faux_ca7544e28c93445e80625010d57305b0.artipreset",
+    "name": "Faux"
+   },
+   {
+    "filename": "Rock_d776208361ed40fb90decbf2e0daa8b6.artipreset",
+    "name": "Funky"
+   },
+   {
+    "filename": "GrandPianoBass_73d02ff675a54676ad9d836ee6f6e78c.artipreset",
+    "name": "Grand Piano"
+   },
+   {
+    "filename": "Grapefruit_9d6ab697eaf649e2acf7dca0df0bda98.artipreset",
+    "name": "Grapefruit"
+   },
+   {
+    "filename": "PrettyChill_aa25ddb106d746f0b812cade4bf81a3a.artipreset",
+    "name": "Island"
+   },
+   {
+    "filename": "Analogy_3a88948ca5df4af6ac2d772b5328ebba.artipreset",
+    "name": "Jackhammer"
+   },
+   {
+    "filename": "Thumb_a3b68f901737469c828a715bce103815.artipreset",
+    "name": "Lofi"
+   },
+   {
+    "filename": "Humans_9c063f2035364d26bd6a6b8ca605d384.artipreset",
+    "name": "Low Choir"
+   },
+   {
+    "filename": "Micronoise_4b0cf415e885479dac1c68f709b851eb.artipreset",
+    "name": "Micronoise"
+   },
+   {
+    "filename": "Present_8ec249603a834c6980e46e9213fa103b.artipreset",
+    "name": "Millenium"
+   },
+   {
+    "filename": "Minimax_f0179965173e4e728775dae3a005bccd.artipreset",
+    "name": "Minimax"
+   },
+   {
+    "filename": "Noir_2b21f45a058045f29f96a34fac9e1474.artipreset",
+    "name": "Noir"
+   },
+   {
+    "filename": "Ohm_fa397f7e688e424195947c0897a9bb11.artipreset",
+    "name": "Ohm"
+   },
+   {
+    "filename": "Orba_e48e4951b57e4f0f9f9926dba91808cf.artipreset",
+    "name": "Orba"
+   },
+   {
+    "filename": "OrbaChill_99fb8f5733c84783b1055e8ac90e607b.artipreset",
+    "name": "Orba + Chill"
+   },
+   {
+    "filename": "Orba2Bass_1cc6a7f4a4534af3821dd8d240b9e2d5.artipreset",
+    "name": "Orba 2 Bass"
+   },
+   {
+    "filename": "TechnoSynth_e770c342aeaf4846bff708b011232f08.artipreset",
+    "name": "Revolve"
+   },
+   {
+    "filename": "Simple_8b6b8b8d14354ef68422348a91f92243.artipreset",
+    "name": "Smoove"
+   },
+   {
+    "filename": "Strong_4630613eb0874a49b899123183498525.artipreset",
+    "name": "Sunrise"
+   },
+   {
+    "filename": "TaetrosBass_9b1d7640310e431ca792ee0126824510.artipreset",
+    "name": "Taetro: Bass"
+   },
+   {
+    "filename": "Boomy_ae6606f06e04496eb8391b037ffe8155.artipreset",
+    "name": "The ATL"
+   },
+   {
+    "filename": "FaceBass_49ca4addff2d44089fefec9f48181a2c.artipreset",
+    "name": "Tom Thum: Face Bass"
+   },
+   {
+    "filename": "AcousticBass_ed0b337b488e4251995f0102ce6ec526.artipreset",
+    "name": "Upright"
+   },
+   {
+    "filename": "VibratoBass_96059c56d89043fbbc435ad35f82ce3d.artipreset",
+    "name": "Vibrato Bass"
+   },
+   {
+    "filename": "VinylBass_6621b0bb75874e7791d475f5f9594a23.artipreset",
+    "name": "Vinyl"
+   },
+   {
+    "filename": "Lefty_a6bf112fc97f4841acb5ae7017ef3055.artipreset",
+    "name": "Wavy"
+   },
+   {
+    "filename": "Meditative_401a4914f6b7446c929779236aa2bfe9.artipreset",
+    "name": "Zen"
+   }
+  ],
+  "chord": [
+   {
+    "filename": "1981_ca0f71882db74f11a2ac6a25c418b841.artipreset",
+    "name": "1981"
+   },
+   {
+    "filename": "7thChords_557b67d0994149f78cc7e98a4f654b6f.artipreset",
+    "name": "7th Chords"
+   },
+   {
+    "filename": "AllOut_e908ca8b68c24aee8842c556f636921c.artipreset",
+    "name": "All Out"
+   },
+   {
+    "filename": "Ambeeant_30e9af34fafe420692476b0eaec2c64a.artipreset",
+    "name": "Ambeeant"
+   },
+   {
+    "filename": "Bedroom_5e02c9df136b4fe48e8703e0936ab04a.artipreset",
+    "name": "Bedroom"
+   },
+   {
+    "filename": "BigStrings_f15370c7b7a54ca9b3ecb3112e5b638d.artipreset",
+    "name": "Big Strings"
+   },
+   {
+    "filename": "BoomyBooms_37335656424e4fe5a4c49c35fec76490.artipreset",
+    "name": "Boomy Booms"
+   },
+   {
+    "filename": "NovaGuitar_098ac7f62b204601b614475b53eabcc6.artipreset",
+    "name": "Bossa Guitar"
+   },
+   {
+    "filename": "BrightHorns_96783ecdf013422fa520f495e6747842.artipreset",
+    "name": "Bright Horns"
+   },
+   {
+    "filename": "Cartridge_0bbbd9e9ca0d4793bfcd0f40ebe7f070.artipreset",
+    "name": "Cartridge"
+   },
+   {
+    "filename": "Citrus_0fe99a3d7ece404b8e313c00a932afed.artipreset",
+    "name": "Citrus"
+   },
+   {
+    "filename": "ClaviWonder_b1a1e91128db4ac8a20671caae408ad6.artipreset",
+    "name": "Clavi Wonder"
+   },
+   {
+    "filename": "Coin_b80613e9f91647acbc927f971c107fb4.artipreset",
+    "name": "Console"
+   },
+   {
+    "filename": "DaydreamChords_bddf803ef57a428fb3ccb0089c1d8908.artipreset",
+    "name": "Daydream"
+   },
+   {
+    "filename": "Dope_eb3e1b6f7ef14164956276b5b85b53cc.artipreset",
+    "name": "Dope"
+   },
+   {
+    "filename": "DustyHorns_56a612a4f4d14339ad96be7c7cb7ec31.artipreset",
+    "name": "Dusty Horns"
+   },
+   {
+    "filename": "Blooming_fe849159580e4bf19255149eaff30d1b.artipreset",
+    "name": "Electro"
+   },
+   {
+    "filename": "Candy_cf032e05491643ee96b0acecb6644047.artipreset",
+    "name": "Epic"
+   },
+   {
+    "filename": "EyesClosed_483cd0b07ef94850a312a3f41eb1e3ba.artipreset",
+    "name": "Eyes Closed"
+   },
+   {
+    "filename": "Faux_faed2d6d1a4040aba68aaafbe0119108.artipreset",
+    "name": "Faux"
+   },
+   {
+    "filename": "DarkHorns_6ffad2f3bbf34a8ebe245a6a837673ed.artipreset",
+    "name": "Floating"
+   },
+   {
+    "filename": "Rock_0567df17c7194e48ac4965e5a735624f.artipreset",
+    "name": "Funky"
+   },
+   {
+    "filename": "GrandPianoChord_90e7d5af9ad44b1a952bef04d6bf90ab.artipreset",
+    "name": "Grand Piano"
+   },
+   {
+    "filename": "Grapefruit_7af325dec38943599c389055bb53a433.artipreset",
+    "name": "Grapefruit"
+   },
+   {
+    "filename": "DarkPiano_8f91b3526cb64e7a8b707526310da418.artipreset",
+    "name": "Jackhammer"
+   },
+   {
+    "filename": "ElectricOrgan_7d374c8e0d5844fe9596537d1e123acb.artipreset",
+    "name": "Jam"
+   },
+   {
+    "filename": "JiveOrgan_8d468d9e4c5e429b9922c779a93ec962.artipreset",
+    "name": "Jive Organ"
+   },
+   {
+    "filename": "LofiPiano_064bae8d75034fd2ae2a048f3341f0c5.artipreset",
+    "name": "Lofi Piano"
+   },
+   {
+    "filename": "MarimbaChord_23781997ecba4522a9fec0378813b21a.artipreset",
+    "name": "Marimba"
+   },
+   {
+    "filename": "Future_0a1e1f7b77154d998c29d58583565609.artipreset",
+    "name": "Millenium"
+   },
+   {
+    "filename": "Minimax_edbc4ee5b518468c9e3a58d4c44f50a3.artipreset",
+    "name": "Minimax"
+   },
+   {
+    "filename": "Noir_d6095d4b9df34dd59271925e9efb397f.artipreset",
+    "name": "Noir"
+   },
+   {
+    "filename": "Ohm_3d42af13e6584f3d9251571ae231b4cc.artipreset",
+    "name": "Ohm"
+   },
+   {
+    "filename": "Orba_b9a3b32370d34f8da934ba304a342571.artipreset",
+    "name": "Orba"
+   },
+   {
+    "filename": "OrbaChill_c4e51f6f977a4223be9a00dd39cbdc02.artipreset",
+    "name": "Orba + Chill"
+   },
+   {
+    "filename": "StringSection_2c6abf623de54582aac34e5b7c032989.artipreset",
+    "name": "Orba 2 Chord"
+   },
+   {
+    "filename": "OrbaOpen_6b20575abf124d598b02e592f368591d.artipreset",
+    "name": "Orba Open"
+   },
+   {
+    "filename": "Berimbau_6a9dc618dbd24e6aa0bf416bf1632c50.artipreset",
+    "name": "Party Berimbau"
+   },
+   {
+    "filename": "PassageChords_3f743654cab141c78a37d1ad8a9ac1ba.artipreset",
+    "name": "Passage Chords"
+   },
+   {
+    "filename": "TravelPipes_1348ec1587e247d9ad252a2408cafe1d.artipreset",
+    "name": "Pipes"
+   },
+   {
+    "filename": "Metallic_e29eb5d802054ae6b30e3a1e91e4146d.artipreset",
+    "name": "Revolve"
+   },
+   {
+    "filename": "Suitcase_3dff476c32c443f7b06cf8f60c105e46.artipreset",
+    "name": "Smiley"
+   },
+   {
+    "filename": "FutureRhodes_a115ba8bd2db4b85bfae167430b78d58.artipreset",
+    "name": "Smoove"
+   },
+   {
+    "filename": "DarkChoir_f639275fcb6b4e58b5bb76349c63d22a.artipreset",
+    "name": "Somber Choir"
+   },
+   {
+    "filename": "SoulChords_bda2c9d112a64a3ab24f42ea99c58648.artipreset",
+    "name": "Soul Chords"
+   },
+   {
+    "filename": "SteelDrums_36e53275941549cb95766599da24065a.artipreset",
+    "name": "Steel Drums"
+   },
+   {
+    "filename": "Coffee_1ed457334ac14e97931344f60a1e1fd1.artipreset",
+    "name": "Sunrise"
+   },
+   {
+    "filename": "Synthwave_32ac014163e247979044a4d0e0b367fd.artipreset",
+    "name": "Synthwave"
+   },
+   {
+    "filename": "UnderwaterPans_d429bbca980c4d2ab304701249da3689.artipreset",
+    "name": "Taetro: Pans"
+   },
+   {
+    "filename": "Synthy_e30a87a03d7149b9ac2db4b83588b7ff.artipreset",
+    "name": "The ATL"
+   },
+   {
+    "filename": "PolyGlottal_5651b54a516848619c1d44e286441836.artipreset",
+    "name": "Tom Thum: Poly Glottal"
+   },
+   {
+    "filename": "Sunshine_c4d8859852a5473f9c511a1b62f8127f.artipreset",
+    "name": "Wavy"
+   },
+   {
+    "filename": "Reflections_1083bd17308843f2a5b112318028f496.artipreset",
+    "name": "Zen"
+   }
+  ],
+  "lead": [
+   {
+    "filename": "1981_7f571b780e7a4ff582d92f457d15ff0c.artipreset",
+    "name": "1981"
+   },
+   {
+    "filename": "AllOut_5b49397fa0454840b50d2ae8fcb79614.artipreset",
+    "name": "All Out"
+   },
+   {
+    "filename": "Ambeeant_3e2ee2535c32487ab9f7675d18e6bc31.artipreset",
+    "name": "Ambeeant"
+   },
+   {
+    "filename": "BackandFourth_1e50d8f3719148a89ac691bdf650ef94.artipreset",
+    "name": "Back and Forth"
+   },
+   {
+    "filename": "BackRoads_3f37edd5a1b148e6b729e31c7e935b2f.artipreset",
+    "name": "Back Roads"
+   },
+   {
+    "filename": "Bedroom_19d01fdc321f4106a6362edf9e5b1052.artipreset",
+    "name": "Bedroom"
+   },
+   {
+    "filename": "BoomyBooms_15db13a6c2894e0280aa52c6d9bda11b.artipreset",
+    "name": "Boomy Booms"
+   },
+   {
+    "filename": "NovaHornSection_c87eddc13da04c6fa7efe2c7fc72208c.artipreset",
+    "name": "Bossa Horns"
+   },
+   {
+    "filename": "BrightViolin_f3e7f5e9b54d4abdbea85f993dce6d65.artipreset",
+    "name": "Bright Violin"
+   },
+   {
+    "filename": "Cartridge_4e17f84c16ee41538a4071f79a5636ac.artipreset",
+    "name": "Cartridge"
+   },
+   {
+    "filename": "ChordaLead_428be9212e5c4c95a5bc74e5302aa621.artipreset",
+    "name": "Chorda Lead"
+   },
+   {
+    "filename": "ClaviWonderLead_77d317f4780847e19ee1ccea115fdba6.artipreset",
+    "name": "Clavi Wonder"
+   },
+   {
+    "filename": "SustainedGuitar_2856520e8c1247afbd26f9f495b545e7.artipreset",
+    "name": "Clean Guitar"
+   },
+   {
+    "filename": "Constellation_89a7cde60c2e444ab2f57191ed89cbd4.artipreset",
+    "name": "Comet"
+   },
+   {
+    "filename": "Potion_42de506c0e684dbf9d115bdf65e2d337.artipreset",
+    "name": "Console"
+   },
+   {
+    "filename": "DarkSoloHorn_1ff0d577bfe84e92a623c3966e8b4667.artipreset",
+    "name": "Dark Horn"
+   },
+   {
+    "filename": "DaydreamLead_7a5e08b66e7b4712bbf29c929e85b527.artipreset",
+    "name": "Daydream"
+   },
+   {
+    "filename": "Dope_48725d89678c4504a756d4682d4dd5b1.artipreset",
+    "name": "Dope"
+   },
+   {
+    "filename": "Vox_27707c49eee14d71a09d28ad82112141.artipreset",
+    "name": "Electro"
+   },
+   {
+    "filename": "QuickStrings_5a7921c7cb144aad8834f5e3f90c4e7f.artipreset",
+    "name": "Epic"
+   },
+   {
+    "filename": "EyesClosed_879b3cde6a1d48b5b9041fc58080d257.artipreset",
+    "name": "Eyes Closed"
+   },
+   {
+    "filename": "Faux_25f16bd201084b43949709360d9fe5b1.artipreset",
+    "name": "Faux"
+   },
+   {
+    "filename": "SoloViolin_a1cdbac8fafd4208a673a953f3b27050.artipreset",
+    "name": "Floating"
+   },
+   {
+    "filename": "Rock_9df01099fe024ef082129e44ff9bb648.artipreset",
+    "name": "Funky"
+   },
+   {
+    "filename": "Glockenspiel_191d808d1c21481ea86fea0ef45ddea6.artipreset",
+    "name": "Glockenspiel"
+   },
+   {
+    "filename": "GrandPianoLead_da108650b6004591ab378e06b3a31c6b.artipreset",
+    "name": "Grand Piano"
+   },
+   {
+    "filename": "Grapefruit_86e09a866d2648428c8d01dd4cf7d824.artipreset",
+    "name": "Grapefruit"
+   },
+   {
+    "filename": "Brassy_06909fd596434f51a5874ddde4fd2788.artipreset",
+    "name": "Island Brass"
+   },
+   {
+    "filename": "DarkPluck_68a033c8997f4f58b2059999b29de756.artipreset",
+    "name": "Jackhammer"
+   },
+   {
+    "filename": "ElectricPiano_08951ebf562145ef8ca1f0b9c09e0c90.artipreset",
+    "name": "Jam"
+   },
+   {
+    "filename": "JazzVibes_16314affd8b546769e9b58b7f5c17003.artipreset",
+    "name": "Jive Vibes"
+   },
+   {
+    "filename": "TravelKoto_b532ecd821d64a78b199984afb209ccc.artipreset",
+    "name": "Koto"
+   },
+   {
+    "filename": "LofiPlucks_4d0e45a5d82744d09b600a7eab8bc1cf.artipreset",
+    "name": "Lofi Plucks"
+   },
+   {
+    "filename": "MarimbaLead_06251ef80bc447489cf64df78998cc95.artipreset",
+    "name": "Marimba"
+   },
+   {
+    "filename": "Beyond_b0b2197562264d559169816f06cd63f4.artipreset",
+    "name": "Millenium"
+   },
+   {
+    "filename": "Minimax_674ff4912097436787f3c6adab4aced2.artipreset",
+    "name": "Minimax"
+   },
+   {
+    "filename": "Noir_5dcec6f776874c0182dd46a55e3d0454.artipreset",
+    "name": "Noir"
+   },
+   {
+    "filename": "Ohm_812cebeb6b624861b460993a3c70dee9.artipreset",
+    "name": "Ohm"
+   },
+   {
+    "filename": "Orba_dda6849588934f8e95d571881a17fcd3.artipreset",
+    "name": "Orba"
+   },
+   {
+    "filename": "OrbaChill_48cef00f2b62441e91259d350d12c079.artipreset",
+    "name": "Orba + Chill"
+   },
+   {
+    "filename": "LeadPiano_b4fd5439e6104b59986e8d00f8295113.artipreset",
+    "name": "Orba 2 Lead"
+   },
+   {
+    "filename": "OrbaDiatonic_bf9c51d95b1848c6a2cf5fbd64d41a4d.artipreset",
+    "name": "Orba Diatonic"
+   },
+   {
+    "filename": "Electro-Acoustic_cb69a1f657c8448baa0ef5da644a7bb4.artipreset",
+    "name": "Party Guitar"
+   },
+   {
+    "filename": "PineapplePluck_1def55f118f7455cab5e7fa96c1441d7.artipreset",
+    "name": "Pineapple"
+   },
+   {
+    "filename": "Ooo_8dbc7df39ce7407aaa6c3a27df903ca3.artipreset",
+    "name": "Revolve"
+   },
+   {
+    "filename": "JapaneseFlute_ca97d3cf74c845819fcdac5e4ca15662.artipreset",
+    "name": "Shakuhachi"
+   },
+   {
+    "filename": "Schparkle_eff175b944ab4f018d745f872169913a.artipreset",
+    "name": "Smoove"
+   },
+   {
+    "filename": "Sunrise_2912136037d64608807e3a6435530b1d.artipreset",
+    "name": "Sunrise"
+   },
+   {
+    "filename": "DreamLyre_5f4de09f203745b9b7d1b5318b480d9d.artipreset",
+    "name": "Taetro: Lyre"
+   },
+   {
+    "filename": "Triple_3b317867b1ad491fa433f2f541bbccc4.artipreset",
+    "name": "The ATL"
+   },
+   {
+    "filename": "TiltLead_06077af528ca48c0aa346dd2c2ea5b28.artipreset",
+    "name": "Tilt Lead"
+   },
+   {
+    "filename": "BlippyLead_ad7fdfe078ca4038b9a3beb34124d6ac.artipreset",
+    "name": "Tom Thum: Blippy Lead"
+   },
+   {
+    "filename": "TrippyTones_8b971ae22256442eb9cd5f60e377865f.artipreset",
+    "name": "Wavy"
+   },
+   {
+    "filename": "RainGuitar_20735a07afca43469d8fdf028eb80728.artipreset",
+    "name": "Zen"
+   }
+  ]
+ },
+ "songs": [
+  {
+   "name": "1981",
+   "filename": "1981_c97ef3cee4104a5795dd2f54f939da82.artisong",
+   "presets": {
+    "drum": {
+     "filename": "1981_2cb39746ce774deaa35e855b007cc884.artipreset",
+     "name": "1981"
+    },
+    "bass": {
+     "filename": "1981_2e7c0249d3f44ff5b098ddb16506e3ec.artipreset",
+     "name": "1981"
+    },
+    "chord": {
+     "filename": "1981_ca0f71882db74f11a2ac6a25c418b841.artipreset",
+     "name": "1981"
+    },
+    "lead": {
+     "filename": "1981_7f571b780e7a4ff582d92f457d15ff0c.artipreset",
+     "name": "1981"
+    }
+   }
+  },
+  {
+   "name": "All Out",
+   "filename": "AllOut_894cf9e9c46049c4b36ff38b4d42aca3.artisong",
+   "presets": {
+    "drum": {
+     "filename": "AllOut_31797e74b2a543a3b3473cda9eab1754.artipreset",
+     "name": "AllOut"
+    },
+    "bass": {
+     "filename": "AllOut_04f5e3aface24bcf8107de0a063c6712.artipreset",
+     "name": "AllOut"
+    },
+    "chord": {
+     "filename": "AllOut_e908ca8b68c24aee8842c556f636921c.artipreset",
+     "name": "AllOut"
+    },
+    "lead": {
+     "filename": "AllOut_5b49397fa0454840b50d2ae8fcb79614.artipreset",
+     "name": "AllOut"
+    }
+   }
+  },
+  {
+   "name": "Ambeeant",
+   "filename": "Ambeeant_22eb5bf8a13343909110687a3c6fce9d.artisong",
+   "presets": {
+    "drum": {
+     "filename": "Ambeeant_684670cfc2b341428a14c9113471b011.artipreset",
+     "name": "Ambeeant"
+    },
+    "bass": {
+     "filename": "Ambeeant_972203c475944d82ba230ee88401fcfa.artipreset",
+     "name": "Ambeeant"
+    },
+    "chord": {
+     "filename": "Ambeeant_30e9af34fafe420692476b0eaec2c64a.artipreset",
+     "name": "Ambeeant"
+    },
+    "lead": {
+     "filename": "Ambeeant_3e2ee2535c32487ab9f7675d18e6bc31.artipreset",
+     "name": "Ambeeant"
+    }
+   }
+  },
+  {
+   "name": "An Orbasong",
+   "filename": "AnOrbasong_2a3dee7963e14438b3adcb1bf5586936.artisong",
+   "presets": {
+    "drum": {
+     "filename": "Orba_9c912a95b3804dfc8d641f9d66b17a28.artipreset",
+     "name": "Orba"
+    },
+    "bass": {
+     "filename": "Orba_e48e4951b57e4f0f9f9926dba91808cf.artipreset",
+     "name": "Orba"
+    },
+    "chord": {
+     "filename": "Orba_b9a3b32370d34f8da934ba304a342571.artipreset",
+     "name": "Orba"
+    },
+    "lead": {
+     "filename": "Orba_dda6849588934f8e95d571881a17fcd3.artipreset",
+     "name": "Orba"
+    }
+   }
+  },
+  {
+   "name": "Bedroom",
+   "filename": "Bedroom_c116158c5645425ea29d1a83f2e69984.artisong",
+   "presets": {
+    "drum": {
+     "filename": "Bedroom_26d335a7130349859cd7c355db908165.artipreset",
+     "name": "Bedroom"
+    },
+    "bass": {
+     "filename": "Bedroom_7c7d28afc2454134aa4b7628219dc830.artipreset",
+     "name": "Bedroom"
+    },
+    "chord": {
+     "filename": "Bedroom_5e02c9df136b4fe48e8703e0936ab04a.artipreset",
+     "name": "Bedroom"
+    },
+    "lead": {
+     "filename": "Bedroom_19d01fdc321f4106a6362edf9e5b1052.artipreset",
+     "name": "Bedroom"
+    }
+   }
+  },
+  {
+   "name": "Boomy Booms",
+   "filename": "BoomyBooms_ff9cfada388c4213982ac08420cead38.artisong",
+   "presets": {
+    "drum": {
+     "filename": "BoomyBooms_d157658f3aad46b4904ddd91f2f5072e.artipreset",
+     "name": "BoomyBooms"
+    },
+    "bass": {
+     "filename": "BoomyBooms_dde94c42587b49949388b831f63d7ec3.artipreset",
+     "name": "BoomyBooms"
+    },
+    "chord": {
+     "filename": "BoomyBooms_37335656424e4fe5a4c49c35fec76490.artipreset",
+     "name": "BoomyBooms"
+    },
+    "lead": {
+     "filename": "BoomyBooms_15db13a6c2894e0280aa52c6d9bda11b.artipreset",
+     "name": "BoomyBooms"
+    }
+   }
+  },
+  {
+   "name": "Cartridge",
+   "filename": "Cartridge_4a7aadf75c874aaabdb26ece5cf34e8a.artisong",
+   "presets": {
+    "drum": {
+     "filename": "Cartridge_180bb4ec195246a2b18ddfd62c273a60.artipreset",
+     "name": "Cartridge"
+    },
+    "bass": {
+     "filename": "Cartridge_2ad5b84456284fb1afe382d0d49ff4f2.artipreset",
+     "name": "Cartridge"
+    },
+    "chord": {
+     "filename": "Cartridge_0bbbd9e9ca0d4793bfcd0f40ebe7f070.artipreset",
+     "name": "Cartridge"
+    },
+    "lead": {
+     "filename": "Cartridge_4e17f84c16ee41538a4071f79a5636ac.artipreset",
+     "name": "Cartridge"
+    }
+   }
+  },
+  {
+   "name": "Eyes Closed",
+   "filename": "EyesClosed_19b01f0570e04977aec134c9cfdc4bee.artisong",
+   "presets": {
+    "drum": {
+     "filename": "EyesClosed_994674e51deb4b0c95acf7d45d1e76fa.artipreset",
+     "name": "EyesClosed"
+    },
+    "bass": {
+     "filename": "EyesClosed_75ab9952be3f4e87bee23b96ee9d5cd9.artipreset",
+     "name": "EyesClosed"
+    },
+    "chord": {
+     "filename": "EyesClosed_483cd0b07ef94850a312a3f41eb1e3ba.artipreset",
+     "name": "EyesClosed"
+    },
+    "lead": {
+     "filename": "EyesClosed_879b3cde6a1d48b5b9041fc58080d257.artipreset",
+     "name": "EyesClosed"
+    }
+   }
+  },
+  {
+   "name": "Faux",
+   "filename": "Faux_e6571bd980d44600af7cd47f41ba8786.artisong",
+   "presets": {
+    "drum": {
+     "filename": "Faux_e2bc086075db474698630301dfb886a9.artipreset",
+     "name": "Faux"
+    },
+    "bass": {
+     "filename": "Faux_ca7544e28c93445e80625010d57305b0.artipreset",
+     "name": "Faux"
+    },
+    "chord": {
+     "filename": "Faux_faed2d6d1a4040aba68aaafbe0119108.artipreset",
+     "name": "Faux"
+    },
+    "lead": {
+     "filename": "Faux_25f16bd201084b43949709360d9fe5b1.artipreset",
+     "name": "Faux"
+    }
+   }
+  },
+  {
+   "name": "Grapefruit",
+   "filename": "Grapefruit_1644ea5994364fe3b32fb040281f85c9.artisong",
+   "presets": {
+    "drum": {
+     "filename": "Grapefruit_2cbf666926a340128288c662b20aa99d.artipreset",
+     "name": "Grapefruit"
+    },
+    "bass": {
+     "filename": "Grapefruit_9d6ab697eaf649e2acf7dca0df0bda98.artipreset",
+     "name": "Grapefruit"
+    },
+    "chord": {
+     "filename": "Grapefruit_7af325dec38943599c389055bb53a433.artipreset",
+     "name": "Grapefruit"
+    },
+    "lead": {
+     "filename": "Grapefruit_86e09a866d2648428c8d01dd4cf7d824.artipreset",
+     "name": "Grapefruit"
+    }
+   }
+  },
+  {
+   "name": "Minimax",
+   "filename": "Minimax_7a30372b650344ad99ccc313bb0eab24.artisong",
+   "presets": {
+    "drum": {
+     "filename": "Minimax_75f880d12c524246b055cced43b5d94b.artipreset",
+     "name": "Minimax"
+    },
+    "bass": {
+     "filename": "Minimax_f0179965173e4e728775dae3a005bccd.artipreset",
+     "name": "Minimax"
+    },
+    "chord": {
+     "filename": "Minimax_edbc4ee5b518468c9e3a58d4c44f50a3.artipreset",
+     "name": "Minimax"
+    },
+    "lead": {
+     "filename": "Minimax_674ff4912097436787f3c6adab4aced2.artipreset",
+     "name": "Minimax"
+    }
+   }
+  },
+  {
+   "name": "Ohm",
+   "filename": "Ohm_540c37c590fc4c60b05f455b904403ad.artisong",
+   "presets": {
+    "drum": {
+     "filename": "Ohm_a03ee8ccfe6e4073895e2a6ff9afdbc4.artipreset",
+     "name": "Ohm"
+    },
+    "bass": {
+     "filename": "Ohm_fa397f7e688e424195947c0897a9bb11.artipreset",
+     "name": "Ohm"
+    },
+    "chord": {
+     "filename": "Ohm_3d42af13e6584f3d9251571ae231b4cc.artipreset",
+     "name": "Ohm"
+    },
+    "lead": {
+     "filename": "Ohm_812cebeb6b624861b460993a3c70dee9.artipreset",
+     "name": "Ohm"
+    }
+   }
+  },
+  {
+   "name": "Orba + Chill",
+   "filename": "OrbaChill_e26d8d6ccb9b48b981df17c039acf2ce.artisong",
+   "presets": {
+    "drum": {
+     "filename": "OrbaChill_5793e2d7b46448bfb54d78c4bfb10822.artipreset",
+     "name": "OrbaChill"
+    },
+    "bass": {
+     "filename": "OrbaChill_99fb8f5733c84783b1055e8ac90e607b.artipreset",
+     "name": "OrbaChill"
+    },
+    "chord": {
+     "filename": "OrbaChill_c4e51f6f977a4223be9a00dd39cbdc02.artipreset",
+     "name": "OrbaChill"
+    },
+    "lead": {
+     "filename": "OrbaChill_48cef00f2b62441e91259d350d12c079.artipreset",
+     "name": "OrbaChill"
+    }
+   }
+  }
+ ]
+}
