@@ -55,13 +55,23 @@
     input, textarea { -webkit-user-select: text; user-select: text; }
 
     /* top bar */
-    .bar { display: flex; align-items: center; gap: 8px; }
-    .bar h1 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: .2px; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bar { display: grid; grid-template-columns: repeat(4, 1fr); align-items: center; gap: 6px; }
+    .bar > * { min-width: 0; }
+    .brand { display: flex; align-items: center; gap: 7px; min-width: 0; grid-column: 1; }
+    .brand .logo { width: 26px; height: 26px; flex: 0 0 auto; border-radius: 6px; }
+    .bar h1 { margin: 0; font-size: 13px; font-weight: 600; line-height: 1.05; letter-spacing: .1px; white-space: normal; min-width: 0; }
+    #keyChip, #connectBtn { grid-column: 2; }
+    .barpair { display: flex; gap: 6px; align-items: center; min-width: 0; }
+    .barpair.tools { grid-column: 3; }
+    .barpair.conn { grid-column: 4; }
+    .barpair .iconbtn { min-width: 0; padding: 0; flex: 1 1 0; }
+    .barpair.conn .iconbtn { flex: 0 0 auto; min-width: 40px; }
+    .barpair.conn #status { flex: 1 1 0; }
     .pill {
-      display: inline-flex; align-items: center; gap: 6px;
+      display: inline-flex; align-items: center; justify-content: center; gap: 5px;
       font-size: 12px; color: var(--muted);
-      border: 1px solid var(--line); border-radius: 20px; padding: 4px 10px; background: var(--panel);
-      max-width: 38%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+      border: 1px solid var(--line); border-radius: 10px; padding: 0 6px; min-height: 46px; background: var(--panel);
+      overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
     }
     .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); flex: 0 0 auto; }
     .connected .dot { background: var(--ok); }
@@ -86,10 +96,10 @@
       background: color-mix(in srgb, var(--accent) 26%, var(--panel-2));
       border-color: color-mix(in srgb, var(--accent) 60%, var(--line)); }
     .connect.on { background: var(--panel-2); border-color: var(--line); font-weight: 400; color: var(--muted); }
-    .iconbtn { min-height: 46px; min-width: 46px; padding: 0 11px; font-size: 18px; flex: 0 0 auto; }
+    .iconbtn { min-height: 46px; min-width: 44px; padding: 0 8px; font-size: 18px; flex: 0 0 auto; }
     .keychip {
-      display: none; min-height: 46px; padding: 0 12px; font-size: 12px; flex: 0 0 auto;
-      border-radius: 20px; background: var(--panel); white-space: nowrap;
+      display: none; min-height: 46px; padding: 0 9px; font-size: 12px; flex: 0 0 auto;
+      border-radius: 10px; background: var(--panel); white-space: nowrap;
     }
     .keychip.show { display: inline-flex; align-items: center; }
     .seqclock .bpm { cursor: pointer; }
@@ -177,7 +187,9 @@
     .field > .lab { font-size: 11px; color: var(--muted); padding-left: 2px; text-transform: uppercase; letter-spacing: .5px; }
 
     /* transport */
-    .transport { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .orbarow { display: grid; grid-template-columns: 1fr 3fr; gap: 6px; align-items: start; }
+    .transport { display: flex; gap: 6px; }
+    .transport button { flex: 1 1 0; min-width: 0; min-height: 44px; font-size: 16px; }
     .transport button { min-height: 48px; font-size: 18px; }
     .transport .rec.on { background: color-mix(in srgb, var(--danger) 42%, var(--panel-2)); border-color: var(--danger); }
     .transport .clear { color: color-mix(in srgb, var(--danger) 70%, var(--text)); }
@@ -204,7 +216,7 @@
 
     /* sequencer / looper */
     .seq { display: grid; gap: 5px; }
-    .seqbar { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto auto; gap: 6px; align-items: center; min-width: 0; }
+    .seqbar { display: grid; grid-template-columns: 1fr 1fr 4fr 1fr 1fr; gap: 6px; align-items: center; min-width: 0; }
     .seqbar button { min-height: 44px; min-width: 48px; font-size: 16px; }
     .seqbar .rec.on { background: color-mix(in srgb, var(--danger) 42%, var(--panel-2)); border-color: var(--danger); }
     .seqbar .rec.armed { border-color: var(--danger); color: var(--danger); }
@@ -213,10 +225,10 @@
     .seqclock .bpm { font-size: 17px; font-weight: 600; }
     .seqclock .pos { font-size: 11px; color: var(--muted); }
     .seqclock .bpm.beat { color: var(--accent-2); }
-    .seqbar select { min-height: 44px; width: 74px; padding: 4px 24px 4px 10px; font-size: 13px; }
+    .seqbar select { min-height: 44px; width: 100%; padding: 4px 15px 4px 6px; font-size: 12px; background-position: right 8px center, right 4px center; }
     .seqbar .met { font-size: 14px; }
     .seqbar .met.off { opacity: .45; }
-    .lanes { display: grid; grid-template-columns: repeat(auto-fit, minmax(124px, 1fr)); gap: 6px; }
+    .lanes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
     .lane {
       display: flex; flex-direction: column; align-items: center; gap: 2px;
       border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2);
@@ -224,6 +236,9 @@
       min-width: 0;
     }
     .lane .st { font-size: 10px; }
+    .lanehead { display: flex; align-items: center; gap: 6px; width: 100%; padding: 1px 4px 0; }
+    .lanehead .lanetitle { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; align-items: center; line-height: 1.05; }
+    .lane .x.mini { min-height: 30px; padding: 0 9px; font-size: 10px; flex: 0 0 auto; }
     .lane.has { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); color: var(--text); }
     .lane.recing { border-color: var(--danger); }
     .lane.recing .st { color: var(--danger); }
@@ -233,7 +248,7 @@
       border: 1px solid var(--line); border-radius: 8px; background: var(--panel);
       color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
-    .lane .x.snapbtn { grid-column: 1 / -1; }
+    .lane .x.solo.on, .lane .x.mute.on { background: color-mix(in srgb, currentColor 14%, var(--panel)); border-color: currentColor; opacity: 1; }
     .lane .x.qon { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
     .lane .x.arm { opacity: .45; }
     .lane .x.arm.on { color: color-mix(in srgb, var(--danger) 60%, var(--muted)); opacity: 1; }    /* armed, idle: quiet */
@@ -247,8 +262,10 @@
 
     /* live note preview strips (one per MIDI source) */
     .viz { display: grid; gap: 4px; }
-    .vizrow { display: grid; grid-template-columns: 56px 1fr; gap: 8px; align-items: center; }
-    .vizrow .nm { font-size: 10px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; }
+    .grouplabel { display: flex; align-items: center; gap: 8px; font-size: 10px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); margin: 7px 2px 1px; }
+    .grouplabel::after { content: ""; flex: 1 1 auto; height: 1px; background: var(--line); }
+    .vizrow { display: grid; grid-template-columns: 76px 1fr; gap: 8px; align-items: center; }
+    .vizrow .nm { font-size: 10px; color: var(--muted); white-space: normal; line-height: 1.1; text-align: right; word-break: break-word; }
     .vizrow canvas { width: 100%; height: 36px; display: block; border: 1px solid color-mix(in srgb, var(--line) 60%, transparent); border-radius: 6px; background: #14181d; }
     .customed { display: none; gap: 6px; }
     .customed.show { display: grid; }
@@ -259,58 +276,73 @@
     .customrow button { min-height: 38px; padding: 0 12px; font-size: 12px; }
 
     .msg { font-size: 11px; color: var(--muted); font-family: ui-monospace, Menlo, monospace;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 14px; padding: 0 2px; }
+      white-space: normal; min-height: 14px; padding: 0 2px; }
 
-    .appfoot { text-align: center; font-size: 10px; opacity: .55; padding: 10px 0 4px; }
-    .appfoot a { color: var(--muted); text-decoration: none; }
-    .appfoot a:hover { color: var(--accent); }
+    .appfoot { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 10px; padding: 10px 0 4px; }
+    .appfoot a { color: var(--muted); text-decoration: none; opacity: .7; }
+    .appfoot a:hover { color: var(--accent); opacity: 1; }
+    .helpdot { width: 19px; height: 19px; min-height: 0; min-width: 0; padding: 0; border-radius: 50%;
+      border: 1px solid var(--line); background: var(--panel-2); color: var(--muted);
+      font-size: 11px; font-weight: 700; line-height: 1; display: inline-flex; align-items: center; justify-content: center; }
+    .helpdot:hover { color: var(--accent); border-color: var(--accent); }
+    .helpgrid { display: grid; gap: 1px; }
+    .helpsec { margin: 9px 0 2px; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; }
+    .helpsec:first-child { margin-top: 0; }
+    .helprow { display: grid; grid-template-columns: 104px 1fr; gap: 10px; align-items: baseline; padding: 4px 2px; font-size: 12px; }
+    .helprow kbd { justify-self: start; font: 600 11px ui-monospace, Menlo, monospace; color: var(--text);
+      background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 2px 7px; white-space: nowrap; }
+    .helprow span { color: var(--muted); line-height: 1.3; }
     section { display: grid; gap: 5px; }
   </style>
 </head>
 <body>
   <div class="app" id="app">
     <div class="bar">
-      <h1>Orba Console</h1>
-      <button id="libChip" class="keychip show" title="Songs & presets">♬</button>
+      <div class="brand"><img src="icon.svg" class="logo" alt=""><h1>Orba Console</h1></div>
       <button id="keyChip" class="keychip" title="Key & scale">—</button>
-      <button id="cfgBtn" class="iconbtn" title="Mappings & routing" aria-label="Settings">⚙</button>
-      <button id="midiBtn" class="iconbtn" title="MIDI keyboard → Orba" aria-label="MIDI keyboard input">🎹</button>
-      <span class="pill" id="status"><span class="dot"></span><span id="statusText">Off</span></span>
       <button id="connectBtn" class="connect">Connect</button>
-    </div>
-
-    <div class="parts" id="parts">
-      <button class="part" data-part="0" disabled><span class="nm">Lead</span><span class="inst" data-inst="lead">—</span></button>
-      <button class="part" data-part="1" disabled><span class="nm">Chord</span><span class="inst" data-inst="chord">—</span></button>
-      <button class="part" data-part="2" disabled><span class="nm">Bass</span><span class="inst" data-inst="bass">—</span></button>
-      <button class="part" data-part="3" disabled><span class="nm">Drum</span><span class="inst" data-inst="drum">—</span></button>
-    </div>
-
-    <div class="fx" id="fx">
-      <button class="fxsummary" id="fxToggle">
-        <span class="fxico">🎚</span>
-        <span id="fxSum">—</span>
-        <span class="chev">▾</span>
-      </button>
-      <div class="fxbody">
-        <div class="field">
-          <span class="lab">Instrument · <span id="instLab">Lead</span></span>
-          <select id="instrSelect" disabled></select>
-        </div>
-        <div class="fxrow"><span class="k">Volume</span><input type="range" min="0" max="100" value="100" data-fx="volume" disabled><span class="v" data-fxv="volume">100%</span></div>
-        <div class="fxrow"><span class="k">Reverb</span><input type="range" min="0" max="100" value="0" data-fx="reverb" disabled><span class="v" data-fxv="reverb">0%</span></div>
-        <div class="fxrow"><span class="k">Delay</span><input type="range" min="0" max="100" value="0" data-fx="delay" disabled><span class="v" data-fxv="delay">0%</span></div>
+      <div class="barpair tools">
+        <button id="libChip" class="iconbtn" title="Songs & presets">♬</button>
+        <button id="cfgBtn" class="iconbtn" title="Mappings & routing" aria-label="Settings">⚙</button>
+      </div>
+      <div class="barpair conn">
+        <button id="midiBtn" class="iconbtn" title="MIDI keyboard → Orba" aria-label="MIDI keyboard input">🎹</button>
+        <span class="pill" id="status"><span class="dot"></span><span id="statusText">Off</span></span>
       </div>
     </div>
 
-    <div class="transport">
-      <button id="playPauseBtn" disabled title="Orba play/pause (state unknown, alternates)">▶</button>
-      <button id="recBtn" class="rec" disabled>⏺</button>
-      <!-- device-looper clear intentionally hidden (ACTIONS.clear still mappable)
-      <button id="clearBtn" class="clear" disabled>🗑</button>
-      -->
+    <div class="grouplabel">Orba</div>
+    <div class="parts" id="parts">
+      <button class="part" data-part="3" disabled><span class="nm">Drum</span><span class="inst" data-inst="drum">—</span></button>
+      <button class="part" data-part="2" disabled><span class="nm">Bass</span><span class="inst" data-inst="bass">—</span></button>
+      <button class="part" data-part="1" disabled><span class="nm">Chord</span><span class="inst" data-inst="chord">—</span></button>
+      <button class="part" data-part="0" disabled><span class="nm">Lead</span><span class="inst" data-inst="lead">—</span></button>
     </div>
 
+    <div class="orbarow">
+      <div class="transport">
+        <button id="playPauseBtn" disabled title="Orba play/pause (state unknown, alternates)">▶</button>
+        <button id="recBtn" class="rec" disabled>⏺</button>
+      </div>
+      <div class="fx" id="fx">
+        <button class="fxsummary" id="fxToggle">
+          <span class="fxico">🎚</span>
+          <span id="fxSum">—</span>
+          <span class="chev">▾</span>
+        </button>
+        <div class="fxbody">
+          <div class="field">
+            <span class="lab">Instrument · <span id="instLab">Lead</span></span>
+            <select id="instrSelect" disabled></select>
+          </div>
+          <div class="fxrow"><span class="k">Volume</span><input type="range" min="0" max="100" value="100" data-fx="volume" disabled><span class="v" data-fxv="volume">100%</span></div>
+          <div class="fxrow"><span class="k">Reverb</span><input type="range" min="0" max="100" value="0" data-fx="reverb" disabled><span class="v" data-fxv="reverb">0%</span></div>
+          <div class="fxrow"><span class="k">Delay</span><input type="range" min="0" max="100" value="0" data-fx="delay" disabled><span class="v" data-fxv="delay">0%</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grouplabel">Looper</div>
     <div class="seq">
       <div class="seqbar">
         <button id="seqPlay" class="play" title="play / stop">▶</button>
@@ -329,7 +361,7 @@
     <div class="viz" id="noteViz"></div>
 
     <div class="msg" id="msg">BLE only. Tap Connect, pick the Orba.</div>
-    <footer class="appfoot"><a href="https://github.com/holofermes/orba-console" target="_blank" rel="noopener">source on GitHub</a></footer>
+    <footer class="appfoot"><button id="helpBtn" class="helpdot" title="Keyboard & gesture shortcuts" aria-label="Shortcuts">?</button><a href="https://github.com/holofermes/orba-console" target="_blank" rel="noopener">source on GitHub</a></footer>
   </div>
 
   <div class="overlay" id="libOverlay">
@@ -431,6 +463,38 @@
       </div>
       <canvas id="noteEdCanvas"></canvas>
       <div class="noteed-foot" id="noteEdFoot">○ recorded · ● snapped</div>
+    </div>
+  </div>
+
+  <div class="overlay" id="helpOverlay">
+    <div class="sheet">
+      <h2>Shortcuts</h2>
+      <div class="helpgrid">
+        <div class="helpsec">Transport</div>
+        <div class="helprow"><kbd>Space</kbd><span>Play / pause the looper</span></div>
+        <div class="helprow"><kbd>tap BPM</kbd><span>Type an exact tempo</span></div>
+        <div class="helprow"><kbd>🔔 tap</kbd><span>Tap tempo</span></div>
+        <div class="helprow"><kbd>🔔 hold</kbd><span>Metronome click on / off</span></div>
+        <div class="helprow"><kbd>⏺ tap</kbd><span>Record into the active part</span></div>
+        <div class="helprow"><kbd>⏺ hold</kbd><span>Clear the active part</span></div>
+        <div class="helpsec">Parts</div>
+        <div class="helprow"><kbd>tap</kbd><span>Select a part</span></div>
+        <div class="helprow"><kbd>hold</kbd><span>Solo / un-solo that part</span></div>
+        <div class="helpsec">Looper tracks</div>
+        <div class="helprow"><kbd>snap</kbd><span>Cycle off → grid → groove</span></div>
+        <div class="helprow"><kbd>🎹 tap</kbd><span>Mute / unmute USB keyboard forwarding</span></div>
+        <div class="helprow"><kbd>saved ×</kbd><span>Tap twice to delete a saved preset</span></div>
+        <div class="helpsec">Note editor</div>
+        <div class="helprow"><kbd>Space</kbd><span>Play / pause</span></div>
+        <div class="helprow"><kbd>Del / ⌫</kbd><span>Delete selected notes</span></div>
+        <div class="helprow"><kbd>✏️ draw</kbd><span>Tap = add · drag = move · drag right edge = resize</span></div>
+        <div class="helprow"><kbd>🧽 erase</kbd><span>Tap a note to delete</span></div>
+        <div class="helprow"><kbd>▦ select</kbd><span>Drag a box to select (turns off after)</span></div>
+        <div class="helprow"><kbd>wheel</kbd><span>Zoom horizontally toward the cursor</span></div>
+        <div class="helprow"><kbd>shift + wheel</kbd><span>Zoom rows vertically</span></div>
+        <div class="helprow"><kbd>« / »</kbd><span>Move the loop window one bar</span></div>
+      </div>
+      <button class="learn" id="helpClose">Done</button>
     </div>
   </div>
 
@@ -838,8 +902,9 @@
       const usb = !!usbOut, ble = !!state.char, on = usb || ble;
       els.status.classList.toggle("connected", on);
       els.app.classList.toggle("connected", on);
-      els.statusText.textContent = usb ? "Orba: USB" : ble ? ("BLE: " + (state.device?.name || "Orba")) : "Off";
-      els.connectBtn.style.display = (usb || !navigator.bluetooth) ? "none" : "";   // hide Connect on USB, or when the browser has no Web Bluetooth
+      els.statusText.textContent = usb ? "USB" : ble ? "BT" : "Off";
+      if (!on) $("#keyChip").classList.remove("show");   // no device, no key chip: frees its grid column for Connect
+      els.connectBtn.style.display = (usb || ble || !navigator.bluetooth) ? "none" : "";   // Connect only when disconnected and Web Bluetooth exists
       els.connectBtn.textContent = ble ? "Connected" : "Connect";
       els.connectBtn.classList.toggle("on", ble);
       // 🎹 = status light: lit when a keyboard is present and forwarding live
@@ -994,7 +1059,7 @@
       if (solo === part) unsolo(solo);
       else if (solo !== null) { unsolo(solo); soloPart(part); }   // move the solo
       else soloPart(part);
-      render();
+      render(); renderSeq();
     }
     function muteToggle(part = state.part) {
       const key = PARTS[part].key;
@@ -1012,7 +1077,7 @@
         saveVolStash(stash);
         msg(`Unmute ${PARTS[part].name}`);
       }
-      render();
+      render(); renderSeq();
     }
     // A preset change RESETS that part's FX on the device (incl. volume). If the
     // part was silent (muted, or ducked by a solo), learn the new kit's intended
@@ -1324,6 +1389,8 @@
       loopsSaveTimer = setTimeout(() => { try { localStorage.setItem(LOOPS_KEY, JSON.stringify(serializeLoops())); } catch {} }, 400);
     }
     try { restoreLoops(JSON.parse(localStorage.getItem(LOOPS_KEY))); } catch {}
+    const saveRecArm = () => { try { localStorage.setItem("orbaRecArm", JSON.stringify(seqEngine.recEnabled)); } catch {} };
+    try { const a = JSON.parse(localStorage.getItem("orbaRecArm")); if (Array.isArray(a) && a.length === 4) seqEngine.recEnabled = a.map(Boolean); } catch {}
 
     // Lane snap drives both layers: our browser looper rebuilds immediately,
     // and the Orba's active-part quantize register is written with the same
@@ -1563,7 +1630,9 @@
       if (!seqClock.running) $("#seqPos").textContent = "—";
       const lanes = $("#seqLanes");
       lanes.innerHTML = "";
-      for (let pi = 0; pi < 4; pi++) {
+      const soloNow = soloIdx();
+      const muteStash = loadVolStash().mute;
+      for (const pi of [3, 2, 1, 0]) {            // visual order: Drum, Bass, Chord, Lead (logical indices unchanged)
         const lane = document.createElement("div");
         lane.className = "lane";
         lane.classList.toggle("has", seqEngine.hasContent(pi));
@@ -1573,7 +1642,25 @@
                  : seqEngine.armed && armable ? "armed"
                  : seqEngine.recording && armable ? "REC"
                  : seqEngine.hasContent(pi) ? "●" : "○";
-        lane.innerHTML = `<span>${PARTS[pi].name}</span><span class="st">${st}</span>`;
+        const head = document.createElement("div");
+        head.className = "lanehead";
+        const solo = document.createElement("button");
+        solo.className = "x solo mini"; solo.textContent = "solo";
+        solo.classList.toggle("on", soloNow === pi);
+        if (soloNow === pi) solo.style.color = ledCss(SOLO_COLOR);
+        solo.title = "solo this part";
+        solo.addEventListener("click", () => soloToggle(pi));
+        const title = document.createElement("span");
+        title.className = "lanetitle";
+        title.innerHTML = `<span>${PARTS[pi].name}</span><span class="st">${st}</span>`;
+        const mute = document.createElement("button");
+        mute.className = "x mute mini"; mute.textContent = "mute";
+        mute.classList.toggle("on", muteStash[PARTS[pi].key] != null);
+        if (muteStash[PARTS[pi].key] != null) mute.style.color = ledCss(MUTE_COLOR);
+        mute.title = "mute this part";
+        mute.addEventListener("click", () => muteToggle(pi));
+        head.append(solo, title, mute);
+        lane.append(head);
         const grid = document.createElement("div");
         grid.className = "grid";
         const beats = seqEngine.parts[pi].loopLen / PPQN;
@@ -1586,26 +1673,26 @@
         seqGrids[pi] = grid;
         const row = document.createElement("div");
         row.className = "lanebtns";
-        const q = document.createElement("button");
-        q.className = "x snapbtn";
-        q.textContent = ["snap: off", "snap: grid", "snap: groove"][seqEngine.parts[pi].quant];
-        q.classList.toggle("qon", seqEngine.parts[pi].quant > 0);
-        q.addEventListener("click", () => { setLaneSnap(pi, seqEngine.parts[pi].quant + 1); renderSeq(); });
         const arm = document.createElement("button");
         arm.className = "x arm";
         arm.textContent = "⏺ rec";
         arm.classList.toggle("on", seqEngine.recEnabled[pi]);
         arm.title = seqEngine.recEnabled[pi] ? "record-enabled, tap to exclude from recording" : "excluded from recording";
-        arm.addEventListener("click", () => { seqEngine.recEnabled[pi] = !seqEngine.recEnabled[pi]; renderSeq(); });
-        const ed = document.createElement("button");
-        ed.className = "x"; ed.textContent = "⤢ notes";
-        ed.title = "view / edit notes vs the snap grid";
-        ed.addEventListener("click", () => openNoteEd(pi));
+        arm.addEventListener("click", () => { seqEngine.recEnabled[pi] = !seqEngine.recEnabled[pi]; saveRecArm(); renderSeq(); });
         const x = document.createElement("button");
         x.className = "x"; x.textContent = "clear";
         x.disabled = !seqEngine.hasContent(pi);
         x.addEventListener("click", () => { for (const ev of seqEngine.clearPart(pi)) sendPartMidi(ev.part, ev.bytes); persistLoops(); renderSeq(); renderKb16(); });
-        row.append(q, arm, ed, x);
+        const q = document.createElement("button");
+        q.className = "x snapbtn";
+        q.textContent = ["snap: off", "snap: grid", "snap: groove"][seqEngine.parts[pi].quant];
+        q.classList.toggle("qon", seqEngine.parts[pi].quant > 0);
+        q.addEventListener("click", () => { setLaneSnap(pi, seqEngine.parts[pi].quant + 1); renderSeq(); });
+        const ed = document.createElement("button");
+        ed.className = "x"; ed.textContent = "⤢ notes";
+        ed.title = "view / edit notes vs the snap grid";
+        ed.addEventListener("click", () => openNoteEd(pi));
+        row.append(arm, x, q, ed);
         lane.append(row);
         lanes.append(lane);
       }
@@ -1755,6 +1842,7 @@
     const MUTE_BY_ACTION = { muteToggleLead: 0, muteToggleChord: 1, muteToggleBass: 2, muteToggleDrum: 3 };
     const SOLO_COLOR = [127, 88, 0];   // console amber, solo keys, always
     const MUTE_COLOR = [127, 0, 0];    // console red, mute keys, always
+    const ledCss = c => "rgb(" + c.map(v => Math.round(v / 127 * 255)).join(",") + ")";   // DOIO LED (0-127) -> CSS
     // Idempotent: repaints every mapped key from current state. Part keys show
     // selection (active = its color) with solo overriding in amber; solo/mute
     // keys show DEDUCED solo/mute state. Safe to call any time, incl. the
@@ -2429,6 +2517,11 @@
     });
     $("#libChip").addEventListener("click", () => { buildLibLists(); $("#libOverlay").classList.add("open"); });
     $("#libClose").addEventListener("click", () => $("#libOverlay").classList.remove("open"));
+
+    /* ---- ? shortcuts cheat-sheet ---- */
+    $("#helpBtn").addEventListener("click", () => $("#helpOverlay").classList.add("open"));
+    $("#helpClose").addEventListener("click", () => $("#helpOverlay").classList.remove("open"));
+    $("#helpOverlay").addEventListener("click", e => { if (e.target.id === "helpOverlay") $("#helpOverlay").classList.remove("open"); });
     $("#libOverlay").addEventListener("click", e => { if (e.target === $("#libOverlay")) $("#libOverlay").classList.remove("open"); });
     $("#saveBtn").addEventListener("click", () => {
       const name = $("#presetNameIn").value.trim();
