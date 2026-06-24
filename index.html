@@ -1257,7 +1257,7 @@
       armRecord() {                              // recording begins at the next bar boundary
         if (!this.running) {
           if (this.parts.every(p => p.events.length === 0)) { this.preroll = true; return; }  // blank slate: metronome rolls, first note = loop start
-          this.start(); this.recording = true;   // loops exist: hear them, record from beat 1
+          this.start(); this.recording = true; this._beginTake();   // loops exist: hear them, record from beat 1
           return;
         }
         this.armed = true;
@@ -1265,6 +1265,19 @@
       preroll: false,                            // clock+click running, loop not yet started
       firstTake: false,                          // auto-length: this take decides the loop length
       recEnabled: [true, true, true, true],      // per-part record arm (all on by default)
+      recLenBeats: "auto",                       // length staged for the NEXT fresh take ("auto" = take decides); never resizes existing loops
+      _freshParts: [],                           // indices recording fresh this take (armed AND empty); only these get the staged length
+      _beginTake() {                             // a take starts: stage length ONLY for fresh tracks (armed AND empty)
+        this._freshParts = this.parts.map((_, i) => i).filter(i => this.recEnabled[i] && this.parts[i].events.length === 0);
+        if (this.recLenBeats === "auto") {
+          for (const i of this._freshParts) this.parts[i].loopLen = 32 * PPQN;   // cap; _finalizeAutoLen trims on stop
+          this.firstTake = this._freshParts.length > 0;
+        } else {
+          for (const i of this._freshParts) this.parts[i].loopLen = this.recLenBeats * PPQN;
+          this.firstTake = false;
+        }
+        this._syncCycle();
+      },
       _recStop() {                               // close the take: synth note-offs for held notes
         for (const p of this.parts) {
           for (const n of p.openRec) p.events.push({ tick: ((this.pos % p.loopLen) + p.loopLen) % p.loopLen, bytes: [0x80, n, 0] });
@@ -1273,6 +1286,8 @@
         this.recording = false;
         if (this.firstTake) { this._finalizeAutoLen(); this.firstTake = false; }
         for (const p of this.parts) this._rebuild(p);
+        this._freshParts = [];                   // take over: idle empty tracks no longer pinned to the cycle
+        this._syncCycle();
         return [];
       },
       _finalizeAutoLen() {                       // take length climbs the visible loop-length ladder.
@@ -1280,7 +1295,7 @@
         // at 4.3 beats still means a 4-beat loop, not an 8-beat one half empty.
         const rawBeats = this.pos / PPQN;
         const L = [4, 8, 16, 32].find(v => v >= rawBeats - 0.5) || 32;
-        for (const p of this.parts) p.loopLen = L * PPQN;   // first take sets the base length for ALL tracks
+        for (const i of this._freshParts) this.parts[i].loopLen = L * PPQN;   // ONLY the tracks that recorded fresh this take
         this._syncCycle();
         this.pos = ((this.pos % this.loopLen) + this.loopLen) % this.loopLen;
       },
@@ -1305,8 +1320,10 @@
         p.events = []; this._rebuild(p);
         return out;
       },
-      _syncCycle() {                             // cycle = longest track (lengths are powers of 2 → max == lcm → seamless wrap)
-        this.loopLen = Math.max(...this.parts.map(p => p.loopLen));
+      _syncCycle() {                             // cycle = longest track with content (or recording fresh); idle empty tracks don't inflate it
+        const live = this.parts.filter((p, i) => p.events.length > 0 || this._freshParts.includes(i));
+        const pool = live.length ? live : this.parts;
+        this.loopLen = Math.max(...pool.map(p => p.loopLen));
         return this.loopLen;
       },
       setLoopBeats(beats) {                      // MASTER: set ALL tracks. NON-destructive (raw ticks kept;
@@ -1336,7 +1353,7 @@
         if (!this.running) return [];
         if (this.preroll) return [];             // metronome rolls; the loop hasn't started
         const out = [];
-        if (this.armed && this.pos % BAR === 0) { this.armed = false; this.recording = true; }
+        if (this.armed && this.pos % BAR === 0) { this.armed = false; this.recording = true; this._beginTake(); }
         for (let pi = 0; pi < 4; pi++) {
           const p = this.parts[pi];
           for (const ev of p.sched.get(this.pos % p.loopLen) || []) {
@@ -1362,6 +1379,7 @@
     function serializeLoops() {
       return {
         loopLen: seqEngine.loopLen,
+        recLen: seqEngine.recLenBeats,
         parts: seqEngine.parts.map(p => ({ q: p.quant, len: p.loopLen, start: p.loopStart || 0, ev: p.events.map(e => [e.tick, ...e.bytes]) })),
       };
     }
@@ -1378,10 +1396,12 @@
         seqEngine._rebuild(p);
       });
       seqEngine._syncCycle();
-      const uniform = seqEngine.parts.every(p => p.loopLen === seqEngine.parts[0].loopLen);
-      const lenOpt = String(seqEngine.parts[0].loopLen / PPQN);
+      seqEngine.recLenBeats = data.recLen != null ? data.recLen : "auto";
       const sel = $("#seqLen");
-      if (sel) sel.value = uniform && [...sel.options].some(o => o.value === lenOpt) ? lenOpt : "auto";
+      if (sel) {
+        const v = seqEngine.recLenBeats === "auto" ? "auto" : String(seqEngine.recLenBeats);
+        sel.value = [...sel.options].some(o => o.value === v) ? v : "auto";
+      }
     }
     let loopsSaveTimer = null;
     function persistLoops() {
@@ -1491,7 +1511,7 @@
       }
       seqClock.running ? seqStop() : seqStart();
     }
-    let seqAutoLen = true;                                   // "auto" = Orba mode: first take decides length
+    // loop length for the next take now lives on seqEngine.recLenBeats (per-take, applied only to fresh armed+empty tracks)
     let seqLoopBase = 0;                                     // absolute clock tick where loop-beat-1 lives
     const liveLoopTick = () => liveTick() - seqLoopBase;
     function seqRecTap() {
@@ -1505,7 +1525,7 @@
         else if (seqEngine.running) seqStart();              // loops exist: roll now
       } else {
         for (const ev of seqEngine.recToggle()) sendPartMidi(ev.part, ev.bytes);
-        if (!seqEngine.recording && seqAutoLen) msg(`loop: ${seqEngine.loopLen / PPQN} beats`);
+        if (!seqEngine.recording && seqEngine.recLenBeats === "auto") msg(`loop: ${seqEngine.loopLen / PPQN} beats`);
       }
       persistLoops();
       renderSeq(); renderKb16();
@@ -1519,7 +1539,7 @@
       seqLoopBase = Math.round(LT / PPQN) * PPQN;            // loop beat 1 = nearest metronome beat
       seqEngine.preroll = false;
       seqEngine.recording = true;
-      if (seqAutoLen) { for (const p of seqEngine.parts) p.loopLen = 32 * PPQN; seqEngine._syncCycle(); seqEngine.firstTake = true; }   // cap; take decides
+      seqEngine._beginTake();   // stage length for fresh (armed + empty) tracks only; unarmed and filled tracks untouched
       seqEngine.pos = ((seqClock.tick - seqLoopBase) % seqEngine.loopLen + seqEngine.loopLen) % seqEngine.loopLen;
       seqEngine.record(data, Math.max(0, LT - seqLoopBase), part);
       renderSeq(); renderKb16();
@@ -2154,15 +2174,10 @@
     wireHold($("#seqRec"), seqRecTap, seqRecHold, seqRecTap);
     wireHold($("#seqMet"), seqTapTempo, seqMetHold);
     $("#seqLen").addEventListener("change", () => {
-      if ($("#seqLen").value === "auto") {
-        seqAutoLen = true;
-        msg("loop length: auto, your first take decides");
-        return;
-      }
-      seqAutoLen = false;
-      seqEngine.setLoopBeats(Number($("#seqLen").value));   // non-destructive, no popup
+      const v = $("#seqLen").value;
+      seqEngine.recLenBeats = v === "auto" ? "auto" : Number(v);   // staged for the NEXT empty+armed take only; existing loops untouched
+      msg(v === "auto" ? "next take: length auto, your take decides" : `next empty track records ${v} beats`);
       persistLoops();
-      renderSeq(); renderKb16();
     });
 
     let orbaPlayGuess = false;            // device transport state is unreadable; alternate
