@@ -49,6 +49,11 @@ export const ROOTS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#"
 export const QUANTIZE = { off: 0, grid: 1, groove: 2 };
 export const MIDI_MODE = { perPart: 0, mpe: 1, single: 2 };
 
+// Orba 1 (gen-1) specifics. Control is raw ArtiComm over the CDC serial interface (see buildCommandRaw);
+// the sound is written straight to the audio engine (see audioEngineWrites), no filename-select.
+export const ORBA1_USB  = { vendorId: 0x0000, productId: 0x5740 };   // WebUSB filter (gen-2 = 0x34b0 / 0x0202)
+export const SYNTH_BASE  = { drum: 0x1000, bass: 0x2000, chord: 0x3000, lead: 0x4000 };   // audio-engine per-part base addr (native ModeId order)
+
 // ---------------------------------------------------------------------------
 // Codec  (see SPEC.md §2)
 // ---------------------------------------------------------------------------
@@ -98,6 +103,16 @@ export function buildCommand(payload, msgId = 0) {
   const crc = crc16(packet);
   packet.push((crc >>> 8) & 0xff, crc & 0xff);
   return [0xf0, 0x00, ...encode7(packet), 0xf7];
+}
+
+/** Raw ArtiComm frame (NON-SysEx, no 7-bit encode): [82 01 msgId lenHi lenLo <payload> crcHi crcLo].
+ *  This is the Orba 1 CDC-serial transport; over BLE/USB-MIDI use buildCommand (SysEx) instead. */
+export function buildCommandRaw(payload, msgId = 0) {
+  const p = Array.from(payload);
+  const packet = [...FRAME, msgId & 0xff, (p.length >>> 8) & 0xff, p.length & 0xff, ...p];
+  const crc = crc16(packet);
+  packet.push((crc >>> 8) & 0xff, crc & 0xff);
+  return packet;
 }
 
 /** Decode a captured/received SysEx message into { msgId, payload, crc, crcOk }. */
@@ -266,6 +281,15 @@ export function selectPreset(kind, filename) {
 }
 export const getName = key => getCmd(0x03, NAME_ADDRS[key]);
 
+// Orba 1 sound apply: write a synth patch / drum kit straight to the audio engine as ONE atomic packet.
+// writes = [[addr, value], ...] (absolute addresses; melodic = SYNTH_BASE[part] + offset, drums = the kit's addrs).
+// Value is the raw byte (0-255) verbatim. Returns the payload — wrap with buildCommandRaw for CDC.
+export function audioEngineWrites(writes) {
+  const out = [SET, 0x02];
+  for (const [addr, val] of writes) out.push((addr >>> 8) & 0xff, addr & 0xff, val & 0xff);
+  return out;
+}
+
 // Tempo (SPEC §4.5). bpm float; 16-bit big-endian = round(bpm*100).
 export function setTempo(bpm) {
   const v = Math.round(bpm * 100) & 0xffff;
@@ -287,9 +311,16 @@ export const getScale = () => getCmd(0x03, 0x0013);
 export const setQuantize = (part, mode) => setCmd(0x07, 0x0003 + partIndex(part), mode & 0xff);
 export const getQuantize = part => getCmd(0x07, 0x0003 + partIndex(part));
 
-// Metronome (SPEC §4.8) — enum to confirm by snoop
+// Metronome (SPEC §4.8): mode 0 = off, 1 = on (firmware sounds the click only WHILE RECORDING), 2 = continuous.
+// Confirmed via Orba::queueSetMetronomeMode (domain 3, addr 0x20, one mode byte). Not phase-synced to a host looper;
+// only the tempo register is shared, so it won't line up with a browser sequencer's clock.
 export const setMetronome = mode => setCmd(0x03, 0x0020, mode & 0xff);
 export const getMetronome = () => getCmd(0x03, 0x0020);
+
+// USB port layout (d01@0x0015): 0 = four per-voice MIDI ports (Lead/Chord/Bass/Drum), 1 = one merged
+// active-voice port. Persists across power-cycle. Gen-1 default 1, Orba 2 default 0.
+export const setUsbMode = mode => setCmd(0x01, 0x0015, mode & 0xff);
+export const getUsbMode = () => getCmd(0x01, 0x0015);
 
 // Misc single-byte registers (SPEC §4.10)
 export const setMidiMode       = mode => setCmd(0x03, 0x000d, mode & 0xff);

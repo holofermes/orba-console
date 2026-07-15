@@ -656,7 +656,7 @@
     let usbOut = null, usbOuts = [], usbIn = null;   // Orba USB ports: usbOuts[i] drives part i; usbOut[0] for SysEx
     // Orba 1 (gen-1): control is raw ArtiComm over Web Serial (CDC), not USB-MIDI. Preset = audio-engine patch apply.
     let usbDevice = null, gen1Present = false, gen1Patches = null, gen1Offsets = null, gen1Drums = null;
-    const GEN1_BASE = { drum: 0x1000, bass: 0x2000, chord: 0x3000, lead: 0x4000 };   // per-part audio-engine base addr
+    const GEN1_BASE = orba.SYNTH_BASE;   // per-part audio-engine base addr (drum 0x1000 / bass 0x2000 / chord 0x3000 / lead 0x4000)
     let midiAccess = null, fwdMute = false; // Web MIDI access + 🎹 mute override
     const fwdNotes = new Map();             // note -> channel it was sent on (clean note-offs across part switches)
     const isOrbaPort = p => /orba/i.test((p.name || "") + (p.manufacturer || ""));
@@ -696,12 +696,9 @@
        USB: VID 0x0000 / PID 0x5740, CDC interfaces 2 (control) + 3 (data),
        bulk endpoint 1 (OUT 0x01 / IN 0x81).
     ------------------------------------------------------------------- */
-    const ORBA1_USB = { vendorId: 0x0000, productId: 0x5740 };
-    function frameRaw(payload) {                     // 82 01 <mid> <lenHi> <lenLo> <payload...> <crcHi> <crcLo>
-      const mid = nextMsgId() & 0x7f;
-      const body = [...orba.FRAME, mid, (payload.length >> 8) & 0xff, payload.length & 0xff, ...payload];
-      const c = orba.crc16(body);
-      return Uint8Array.from([...body, (c >> 8) & 0xff, c & 0xff]);
+    const ORBA1_USB = orba.ORBA1_USB;
+    function frameRaw(payload) {                      // raw ArtiComm frame (non-SysEx) for the CDC transport
+      return Uint8Array.from(orba.buildCommandRaw(payload, nextMsgId() & 0x7f));
     }
     async function loadGen1Data() {
       if (gen1Patches) return;
@@ -802,23 +799,16 @@
       if (partKey === "drum") {                                 // whole kit = 172 audio-engine writes at absolute addrs
         const kit = gen1Drums && gen1Drums[key];
         if (!kit) { msg(`No Orba 1 drum kit: ${key}`); return; }
-        const dtriples = [];
-        for (const [addr, val] of kit) dtriples.push((addr >> 8) & 0xff, addr & 0xff, val & 0xff);
-        await sendPayload([orba.SET, 0x02, ...dtriples]);       // one batch to base 0x1000 (DrumPatch×5 + CymbalPatch×3 + ShakerPatch)
+        await sendPayload(orba.audioEngineWrites(kit));         // whole kit = one batch of absolute [addr,val] writes to base 0x1000
         return;
       }
       const patch = gen1Patches[partKey] && gen1Patches[partKey][key];
       if (base === undefined || !patch) { msg(`No Orba 1 patch: ${partKey}/${key}`); return; }
-      // Batch the ~99 audio-engine writes into a few packets the way the app does:
-      // [SET, 0x02, (addrHi,addrLo,val) x N]. One packet lands atomically; sending 99 separate
-      // writes was unreliable (some didn't take -> the "toggle to make it stick" symptom). This does
-      // NOT touch the mixer (0x50xx), so the part's volume/FX stay as the user set them.
-      const triples = [];
-      for (const nm in gen1Offsets) {
-        const addr = base + gen1Offsets[nm];
-        triples.push((addr >> 8) & 0xff, addr & 0xff, (patch[nm] | 0) & 0xff);
-      }
-      await sendPayload([orba.SET, 0x02, ...triples]);          // all 99 in ONE audio-engine batch (dequeueAudioEngineSetCommands)
+      // All ~99 params in ONE atomic audio-engine batch (per-param sends were unreliable). Does NOT touch
+      // the mixer (0x50xx), so the part's volume/FX stay as set.
+      const writes = [];
+      for (const nm in gen1Offsets) writes.push([base + gen1Offsets[nm], (patch[nm] | 0) & 0xff]);
+      await sendPayload(orba.audioEngineWrites(writes));
     }
 
     /* ===================================================================
