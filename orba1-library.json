@@ -1,0 +1,657 @@
+{
+  "presets": {
+    "drum": [
+      {
+        "name": "1981",
+        "filename": "1981.orbapreset"
+      },
+      {
+        "name": "All Out",
+        "filename": "All Out.orbapreset"
+      },
+      {
+        "name": "Ambeeant",
+        "filename": "Ambeeant.orbapreset"
+      },
+      {
+        "name": "Bedroom",
+        "filename": "Bedroom.orbapreset"
+      },
+      {
+        "name": "Boomy Booms",
+        "filename": "Boomy Booms.orbapreset"
+      },
+      {
+        "name": "Cartridge",
+        "filename": "Cartridge.orbapreset"
+      },
+      {
+        "name": "Eyes Closed",
+        "filename": "Eyes Closed.orbapreset"
+      },
+      {
+        "name": "Faux",
+        "filename": "Faux.orbapreset"
+      },
+      {
+        "name": "Grapefruit",
+        "filename": "Grapefruit.orbapreset"
+      },
+      {
+        "name": "Minimax",
+        "filename": "Minimax.orbapreset"
+      },
+      {
+        "name": "Ohm",
+        "filename": "Ohm.orbapreset"
+      },
+      {
+        "name": "Orba + Chill",
+        "filename": "Orba + Chill.orbapreset"
+      },
+      {
+        "name": "Orba",
+        "filename": "Orba.orbapreset"
+      },
+      {
+        "name": "Pieces",
+        "filename": "Pieces.orbapreset"
+      },
+      {
+        "name": "To and Fro",
+        "filename": "To and Fro.orbapreset"
+      }
+    ],
+    "bass": [
+      {
+        "name": "1981",
+        "filename": "1981.orbapreset"
+      },
+      {
+        "name": "All Out",
+        "filename": "All Out.orbapreset"
+      },
+      {
+        "name": "Ambeeant",
+        "filename": "Ambeeant.orbapreset"
+      },
+      {
+        "name": "Bedroom",
+        "filename": "Bedroom.orbapreset"
+      },
+      {
+        "name": "Boomy Booms",
+        "filename": "Boomy Booms.orbapreset"
+      },
+      {
+        "name": "Cartridge",
+        "filename": "Cartridge.orbapreset"
+      },
+      {
+        "name": "Eyes Closed",
+        "filename": "Eyes Closed.orbapreset"
+      },
+      {
+        "name": "Faux",
+        "filename": "Faux.orbapreset"
+      },
+      {
+        "name": "Grapefruit",
+        "filename": "Grapefruit.orbapreset"
+      },
+      {
+        "name": "Lifelike",
+        "filename": "Lifelike.orbapreset"
+      },
+      {
+        "name": "Minimax",
+        "filename": "Minimax.orbapreset"
+      },
+      {
+        "name": "Ohm",
+        "filename": "Ohm.orbapreset"
+      },
+      {
+        "name": "Orba + Chill",
+        "filename": "Orba + Chill.orbapreset"
+      },
+      {
+        "name": "Orba",
+        "filename": "Orba.orbapreset"
+      },
+      {
+        "name": "Pieces",
+        "filename": "Pieces.orbapreset"
+      },
+      {
+        "name": "To and Fro",
+        "filename": "To and Fro.orbapreset"
+      },
+      {
+        "name": "Vibrato Bass",
+        "filename": "Vibrato Bass.orbapreset"
+      }
+    ],
+    "chord": [
+      {
+        "name": "1981",
+        "filename": "1981.orbapreset"
+      },
+      {
+        "name": "7th Chords",
+        "filename": "7th Chords.orbapreset"
+      },
+      {
+        "name": "All Out",
+        "filename": "All Out.orbapreset"
+      },
+      {
+        "name": "Ambeeant",
+        "filename": "Ambeeant.orbapreset"
+      },
+      {
+        "name": "Bedroom",
+        "filename": "Bedroom.orbapreset"
+      },
+      {
+        "name": "Boomy Booms",
+        "filename": "Boomy Booms.orbapreset"
+      },
+      {
+        "name": "Cartridge",
+        "filename": "Cartridge.orbapreset"
+      },
+      {
+        "name": "Eyes Closed",
+        "filename": "Eyes Closed.orbapreset"
+      },
+      {
+        "name": "Faux",
+        "filename": "Faux.orbapreset"
+      },
+      {
+        "name": "Grapefruit",
+        "filename": "Grapefruit.orbapreset"
+      },
+      {
+        "name": "Lifelike",
+        "filename": "Lifelike.orbapreset"
+      },
+      {
+        "name": "Minimax",
+        "filename": "Minimax.orbapreset"
+      },
+      {
+        "name": "Ohm",
+        "filename": "Ohm.orbapreset"
+      },
+      {
+        "name": "Orba + Chill",
+        "filename": "Orba + Chill.orbapreset"
+      },
+      {
+        "name": "Orba Open",
+        "filename": "Orba Open.orbapreset"
+      },
+      {
+        "name": "Orba",
+        "filename": "Orba.orbapreset"
+      },
+      {
+        "name": "Organ",
+        "filename": "Organ.orbapreset"
+      },
+      {
+        "name": "Passage Chords",
+        "filename": "Passage Chords.orbapreset"
+      },
+      {
+        "name": "Pieces",
+        "filename": "Pieces.orbapreset"
+      },
+      {
+        "name": "Soul Chords",
+        "filename": "Soul Chords.orbapreset"
+      },
+      {
+        "name": "To and Fro",
+        "filename": "To and Fro.orbapreset"
+      }
+    ],
+    "lead": [
+      {
+        "name": "1981",
+        "filename": "1981.orbapreset"
+      },
+      {
+        "name": "All Out",
+        "filename": "All Out.orbapreset"
+      },
+      {
+        "name": "Ambeeant",
+        "filename": "Ambeeant.orbapreset"
+      },
+      {
+        "name": "Bedroom",
+        "filename": "Bedroom.orbapreset"
+      },
+      {
+        "name": "Boomy Booms",
+        "filename": "Boomy Booms.orbapreset"
+      },
+      {
+        "name": "Cartridge",
+        "filename": "Cartridge.orbapreset"
+      },
+      {
+        "name": "Eyes Closed",
+        "filename": "Eyes Closed.orbapreset"
+      },
+      {
+        "name": "Faux",
+        "filename": "Faux.orbapreset"
+      },
+      {
+        "name": "_Grapefruit",
+        "filename": "Grapefruit.orbapreset"
+      },
+      {
+        "name": "Lifelike",
+        "filename": "Lifelike.orbapreset"
+      },
+      {
+        "name": "Minimax",
+        "filename": "Minimax.orbapreset"
+      },
+      {
+        "name": "Ohm",
+        "filename": "Ohm.orbapreset"
+      },
+      {
+        "name": "Orba + Chill",
+        "filename": "Orba + Chill.orbapreset"
+      },
+      {
+        "name": "_Orba Diatonic",
+        "filename": "Orba Diatonic.orbapreset"
+      },
+      {
+        "name": "_Orba",
+        "filename": "Orba.orbapreset"
+      },
+      {
+        "name": "Pieces",
+        "filename": "Pieces.orbapreset"
+      },
+      {
+        "name": "_Tilt Lead",
+        "filename": "Tilt Lead.orbapreset"
+      },
+      {
+        "name": "To and Fro",
+        "filename": "To and Fro.orbapreset"
+      }
+    ]
+  },
+  "songs": [
+    {
+      "name": "1981",
+      "filename": "1981.song",
+      "tempo": "112.0",
+      "description": "If Orba were a time machine (that only traveled to the 80s) it might sound something like this.",
+      "presets": {
+        "drum": {
+          "name": "1981",
+          "filename": "1981.orbapreset"
+        },
+        "bass": {
+          "name": "1981",
+          "filename": "1981.orbapreset"
+        },
+        "chord": {
+          "name": "1981",
+          "filename": "1981.orbapreset"
+        },
+        "lead": {
+          "name": "1981",
+          "filename": "1981.orbapreset"
+        }
+      }
+    },
+    {
+      "name": "All Out",
+      "filename": "All Out.song",
+      "tempo": "103.0",
+      "description": "For this Song, we went All Out. It's a collection of presets that are loud, a little impolite, and way too much fun to play.",
+      "presets": {
+        "drum": {
+          "name": "All Out",
+          "filename": "All Out.orbapreset"
+        },
+        "bass": {
+          "name": "All Out",
+          "filename": "All Out.orbapreset"
+        },
+        "chord": {
+          "name": "All Out",
+          "filename": "All Out.orbapreset"
+        },
+        "lead": {
+          "name": "All Out",
+          "filename": "All Out.orbapreset"
+        }
+      }
+    },
+    {
+      "name": "Ambeeant",
+      "filename": "Ambeeant.song",
+      "tempo": "70.0",
+      "description": "Create your own personal atmosphere with this deeply relaxed set of tones. This song is tuned to a minor key for a darker and more emotional composition.",
+      "presets": {
+        "drum": {
+          "name": "Ambeeant",
+          "filename": "Ambeeant.orbapreset"
+        },
+        "bass": {
+          "name": "Ambeeant",
+          "filename": "Ambeeant.orbapreset"
+        },
+        "chord": {
+          "name": "Ambeeant",
+          "filename": "Ambeeant.orbapreset"
+        },
+        "lead": {
+          "name": "Ambeeant",
+          "filename": "Ambeeant.orbapreset"
+        }
+      }
+    },
+    {
+      "name": "An Orbasong",
+      "filename": "An Orbasong.song",
+      "tempo": "120.0",
+      "description": "Hello! Orbasong is an excellent place to begin your journey. &quot;What's a song?&quot; you might ask. A song is a collection of sound Presets, a key &amp; tempo, artwork, descriptor #tags, and all of the #orbaloops you record.",
+      "presets": {}
+    },
+    {
+      "name": "Bedroom",
+      "filename": "Bedroom.song",
+      "tempo": "110.0",
+      "description": "Create your stadium anthem (from the comfort of your bedroom &quot;studio&quot;).",
+      "presets": {
+        "drum": {
+          "name": "Bedroom",
+          "filename": "Bedroom.orbapreset"
+        },
+        "bass": {
+          "name": "Bedroom",
+          "filename": "Bedroom.orbapreset"
+        },
+        "chord": {
+          "name": "Bedroom",
+          "filename": "Bedroom.orbapreset"
+        },
+        "lead": {
+          "name": "Bedroom",
+          "filename": "Bedroom.orbapreset"
+        }
+      }
+    },
+    {
+      "name": "Boomy Booms",
+      "filename": "Boomy Booms.song",
+      "tempo": "110.0",
+      "description": "Richard Devine is an Atlanta-based electronic musician and sound designer known for pulling influences from a variety of places, and &quot;Boomy Booms&quot; is no exception. In it, you'll hear timbres from iconic hip hop production and early electronica. (The first one to make a loop and rap over it wins.)",
+      "presets": {
+        "drum": {
+          "name": "Boomy Booms",
+          "filename": "Boomy Booms.orbapreset"
+        },
+        "bass": {
+          "name": "Boomy Booms",
+          "filename": "Boomy Booms.orbapreset"
+        },
+        "chord": {
+          "name": "Boomy Booms",
+          "filename": "Boomy Booms.orbapreset"
+        },
+        "lead": {
+          "name": "Boomy Booms",
+          "filename": "Boomy Booms.orbapreset"
+        }
+      }
+    },
+    {
+      "name": "Cartridge",
+      "filename": "Cartridge.song",
+      "tempo": "160.0",
+      "description": "Choose your fighter and get ready to play this 80's videogame-inspired song. ",
+      "presets": {
+        "drum": {
+          "name": "Cartridge",
+          "filename": "Cartridge.orbapreset"
+        },
+        "bass": {
+          "name": "Cartridge",
+          "filename": "Cartridge.orbapreset"
+        },
+        "chord": {
+          "name": "Cartridge",
+          "filename": "Cartridge.orbapreset"
+        },
+        "lead": {
+          "name": "Cartridge",
+          "filename": "Cartridge.orbapreset"
+        }
+      }
+    },
+    {
+      "name": "Eyes Closed",
+      "filename": "Eyes Closed.song",
+      "tempo": "120.0",
+      "description": "Don't look! Here's a song we challenge you to play without looking at your hands.",
+      "presets": {
+        "drum": {
+          "name": "Eyes Closed",
+          "filename": "Eyes Closed.orbapreset"
+        },
+        "bass": {
+          "name": "Eyes Closed",
+          "filename": "Eyes Closed.orbapreset"
+        },
+        "chord": {
+          "name": "Eyes Closed",
+          "filename": "Eyes Closed.orbapreset"
+        },
+        "lead": {
+          "name": "Eyes Closed",
+          "filename": "Eyes Closed.orbapreset"
+        }
+      }
+    },
+    {
+      "name": "Faux",
+      "filename": "Faux.song",
+      "tempo": "98.0",
+      "description": "Light as a feather, synth as a chord. Faux is our collection of softer, wind- and mallet-like sounds.",
+      "presets": {
+        "drum": {
+          "name": "Faux",
+          "filename": "Faux.orbapreset"
+        },
+        "bass": {
+          "name": "Faux",
+          "filename": "Faux.orbapreset"
+        },
+        "chord": {
+          "name": "Faux",
+          "filename": "Faux.orbapreset"
+        },
+        "lead": {
+          "name": "Faux",
+          "filename": "Faux.orbapreset"
+        }
+      }
+    },
+    {
+      "name": "Grapefruit",
+      "filename": "Grapefruit.song",
+      "tempo": "92.0",
+      "description": "Slow down the tempo, speed up the party. Grapefruit is Orba's take on a tropical house production. ",
+      "presets": {
+        "drum": {
+          "name": "Grapefruit",
+          "filename": "Grapefruit.orbapreset"
+        },
+        "bass": {
+          "name": "Grapefruit",
+          "filename": "Grapefruit.orbapreset"
+        },
+        "chord": {
+          "name": "Grapefruit",
+          "filename": "Grapefruit.orbapreset"
+        }
+      }
+    },
+    {
+      "name": "Lifelike",
+      "filename": "Lifelike.song",
+      "tempo": "100",
+      "description": "Was it real or was it just a dream? Jump into this set of reality-modelled synth presets.",
+      "presets": {
+        "bass": {
+          "name": "Lifelike",
+          "filename": "Lifelike.orbapreset"
+        },
+        "chord": {
+          "name": "Lifelike",
+          "filename": "Lifelike.orbapreset"
+        },
+        "lead": {
+          "name": "Lifelike",
+          "filename": "Lifelike.orbapreset"
+        }
+      }
+    },
+    {
+      "name": "Minimax",
+      "filename": "Minimax.song",
+      "tempo": "112.0",
+      "description": "Big ideas come in small packages. This minimal electronic set of sounds is suitable for sparse arrangements.",
+      "presets": {
+        "drum": {
+          "name": "Minimax",
+          "filename": "Minimax.orbapreset"
+        },
+        "bass": {
+          "name": "Minimax",
+          "filename": "Minimax.orbapreset"
+        },
+        "chord": {
+          "name": "Minimax",
+          "filename": "Minimax.orbapreset"
+        },
+        "lead": {
+          "name": "Minimax",
+          "filename": "Minimax.orbapreset"
+        }
+      }
+    },
+    {
+      "name": "Ohm",
+      "filename": "Ohm.song",
+      "tempo": "120.0",
+      "description": "We've curated this song to accompany your studying, meditation, and unwinding your busy mind. Mellow out and enjoy. ",
+      "presets": {
+        "drum": {
+          "name": "Ohm",
+          "filename": "Ohm.orbapreset"
+        },
+        "bass": {
+          "name": "Ohm",
+          "filename": "Ohm.orbapreset"
+        },
+        "chord": {
+          "name": "Ohm",
+          "filename": "Ohm.orbapreset"
+        },
+        "lead": {
+          "name": "Ohm",
+          "filename": "Ohm.orbapreset"
+        }
+      }
+    },
+    {
+      "name": "Orba + Chill",
+      "filename": "Orba + Chill.song",
+      "tempo": "92.0",
+      "description": "Make beats to focus. Make beats for your mumble rap. Or just make beats to relax. Orba + Chill is a set of smoother sounds with a downtempo feel. ",
+      "presets": {
+        "drum": {
+          "name": "Orba + Chill",
+          "filename": "Orba + Chill.orbapreset"
+        },
+        "bass": {
+          "name": "Orba + Chill",
+          "filename": "Orba + Chill.orbapreset"
+        },
+        "chord": {
+          "name": "Orba + Chill",
+          "filename": "Orba + Chill.orbapreset"
+        },
+        "lead": {
+          "name": "Orba + Chill",
+          "filename": "Orba + Chill.orbapreset"
+        }
+      }
+    },
+    {
+      "name": "Pieces",
+      "filename": "Pieces.song",
+      "tempo": "130",
+      "description": "Craft something bounce and bright, piece-by-piece.",
+      "presets": {
+        "drum": {
+          "name": "Pieces",
+          "filename": "Pieces.orbapreset"
+        },
+        "bass": {
+          "name": "Pieces",
+          "filename": "Pieces.orbapreset"
+        },
+        "chord": {
+          "name": "Pieces",
+          "filename": "Pieces.orbapreset"
+        },
+        "lead": {
+          "name": "Pieces",
+          "filename": "Pieces.orbapreset"
+        }
+      }
+    },
+    {
+      "name": "To and Fro",
+      "filename": "To and Fro.song",
+      "tempo": "96",
+      "description": "Get knocked off-balance with this collection of experimental presets sure to keep you on your toes.",
+      "presets": {
+        "drum": {
+          "name": "To and Fro",
+          "filename": "To and Fro.orbapreset"
+        },
+        "bass": {
+          "name": "To and Fro",
+          "filename": "To and Fro.orbapreset"
+        },
+        "chord": {
+          "name": "To and Fro",
+          "filename": "To and Fro.orbapreset"
+        },
+        "lead": {
+          "name": "To and Fro",
+          "filename": "To and Fro.orbapreset"
+        }
+      }
+    }
+  ]
+}
