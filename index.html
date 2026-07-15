@@ -202,13 +202,18 @@
     .fx { display: grid; gap: 5px; }
     .fxsummary {
       display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center;
-      min-height: 42px; padding: 0 12px; font-size: 13px; color: var(--muted); text-align: left;
+      min-height: 48px; padding: 0 12px; font-size: 13px; color: var(--muted); text-align: left;
     }
     .fxsummary .fxico { font-size: 14px; }
     .fxsummary .chev { transition: transform .15s; }
     .fx.open .chev { transform: rotate(180deg); }
     .fxbody { display: none; gap: 4px; }
     .fx.open .fxbody { display: grid; }
+    /* Orba 1 has no FX, so skip the collapsible summary and show the instrument dropdown directly in the row */
+    .gen1 #fxToggle { display: none; }
+    .gen1 #fx .fxbody { display: grid; }
+    .gen1 #fx .field > .lab { display: none; }
+    .gen1 #instrSelect { min-height: 48px; }
     .fxrow { display: grid; grid-template-columns: 58px 1fr 42px; align-items: center; gap: 10px; }
     .fxrow .k { font-size: 13px; color: var(--muted); }
     .fxrow .v { font-size: 13px; text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
@@ -237,8 +242,13 @@
       display: flex; flex-direction: column; align-items: center; gap: 2px;
       border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2);
       padding: 5px 2px; font-size: 11px; color: var(--muted); line-height: 1.1;
-      min-width: 0;
+      min-width: 0; position: relative;
     }
+    /* live-play indicator: pulses while that part is receiving notes (Orba active voice or mapped controller) */
+    .livedot { position: absolute; top: 6px; right: 7px; width: 7px; height: 7px; border-radius: 50%;
+      background: var(--accent-2); opacity: 0; transition: opacity .25s ease; pointer-events: none; }
+    .livedot.live { opacity: 1; animation: livepulse .6s ease-in-out infinite; }
+    @keyframes livepulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.6); } }
     .lane .st { font-size: 10px; }
     .lanehead { display: flex; align-items: center; gap: 6px; width: 100%; padding: 1px 4px 0; }
     .lanehead .lanetitle { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; align-items: center; line-height: 1.05; }
@@ -650,8 +660,10 @@
     let midiAccess = null, fwdMute = false; // Web MIDI access + 🎹 mute override
     const fwdNotes = new Map();             // note -> channel it was sent on (clean note-offs across part switches)
     const isOrbaPort = p => /orba/i.test((p.name || "") + (p.manufacturer || ""));
+    const isOrba2Port = p => /orba\s*2/i.test((p.name || "") + (p.manufacturer || ""));   // gen-2 ("Orba 2"); gen-1 = isOrbaPort && !this
+    let gen1Midi = false;   // the Orba's own USB-MIDI port is present and is a gen-1 (notes only — its control link is CDC/BLE, not MIDI)
     const isKb16Port = p => /kb16|doio/i.test((p.name || "") + (p.manufacturer || ""));
-    function orbaReady() { return !!usbOut || !!state.char || !!usbDevice; }
+    function orbaReady() { return !!usbDevice || !!state.char || (!!usbOut && !gen1Midi); }   // CONTROL established (a gen-1's USB-MIDI port is notes-only)
     function sendToOrba(bytes) {
       if (usbOut) { try { usbOut.send(bytes); } catch (e) { msg("USB send failed (allow MIDI access?)"); } return true; }
       if (state.char) { sendBleMidi(bytes); return true; }
@@ -750,6 +762,13 @@
       try { await openSerial(await navigator.usb.requestDevice({ filters: [ORBA1_USB] })); }
       catch (e) { /* user cancelled the picker */ }
     }
+    async function refreshGen1() {   // state.gen1 = a gen-1 is in play (CDC-connected OR its USB-MIDI port present); swap the preset library on change
+      const want = !!usbDevice || gen1Midi;
+      if (state.gen1 === want) return;
+      state.gen1 = want;
+      await loadLibrary();
+      render(); renderSeq();
+    }
     async function openSerial(dev) {
       await dev.open();
       if (!dev.configuration) await dev.selectConfiguration(1);
@@ -762,21 +781,18 @@
       usbDevice = dev;
       gen1ReadLoop();                                // start draining replies (acks + GET answers) into absorbReadReply
       await loadGen1Data();
-      state.gen1 = true; gen1Present = true;
-      await loadLibrary();                           // swap the preset picker to the gen-1 library
+      gen1Present = true;
+      await refreshGen1();                           // usbDevice set → state.gen1 = true + gen-1 preset library
       msg("Orba 1 connected over USB.");
       scanMidi();                                    // (re)attach the Orba's own USB-MIDI port for notes/ghosting
       updateConnUI();
       readDeviceState();                             // pull key/scale/tempo/instrument names → populate the UI
     }
     function closeSerial() {
-      const d = usbDevice; usbDevice = null; state.gen1 = false; gen1Rx = [];
-      // The gen-1's own USB-MIDI port (notes only) dies with the device. Drop it too, or a powered-off
-      // Orba keeps the status green via usbOut (it lingers while USB stays enumerated). openSerial re-attaches.
-      if (usbIn) usbIn.onmidimessage = null;
-      usbIn = null; usbOut = null; usbOuts = [];
-      loadLibrary(); updateConnUI();                 // reflect "Off" NOW; a powered-off device's close() can hang
-      if (d) d.close().catch(() => {});              // best-effort close in the background
+      const d = usbDevice; usbDevice = null; gen1Rx = [];
+      refreshGen1();                                 // usbDevice gone → state.gen1 follows gen1Midi (still gen-1 if its MIDI port remains)
+      updateConnUI();                                // a gen-1's lingering MIDI port no longer counts as "connected" → status reflects control
+      if (d) d.close().catch(() => {});              // best-effort close in the background (can hang on a powered-off device)
     }
     function disconnectGen1() { gen1Present = false; closeSerial(); msg("Orba 1 disconnected."); }
     async function applyGen1Patch(partKey, filename) {
@@ -818,7 +834,7 @@
       if ((data[0] & 0xf0) === 0xc0) { scheduleResync(); return; }
       // the Orba transmits its own pad playing, recordable like any other input
       const type = data[0] & 0xf0;
-      if (type >= 0x80 && type <= 0xe0) { noteViz.ingest("Orba", data); const lp = PARTS.findIndex(p => p.channel - 1 === (data[0] & 0x0f)); if (lp >= 0) noteEd.liveInput(lp, data); }
+      if (type >= 0x80 && type <= 0xe0) { noteViz.ingest("Orba", data); const lp = PARTS.findIndex(p => p.channel - 1 === (data[0] & 0x0f)); if (lp >= 0) { noteEd.liveInput(lp, data); if (type === 0x90 && data[2] > 0) flashPart(lp); } }
       if ((seqEngine.recording || seqEngine.preroll) && type >= 0x80 && type <= 0xe0) {
         const part = PARTS.findIndex(p => p.channel - 1 === (data[0] & 0x0f));
         if (part >= 0 && !maybeKickRecord(data, part) && seqEngine.recording) seqEngine.record(data, liveLoopTick(), part);
@@ -1057,10 +1073,11 @@
     =================================================================== */
     // Reflect the live connection: prefer USB (auto) over BLE (tap-to-connect).
     function updateConnUI() {
-      const ser = !!usbDevice, usb = !!usbOut, ble = !!state.char, on = usb || ble || ser;
+      const ser = !!usbDevice, ble = !!state.char, gen2Usb = !!usbOut && !gen1Midi, on = ser || ble || gen2Usb;
       els.status.classList.toggle("connected", on);
       els.app.classList.toggle("connected", on);
-      els.statusText.textContent = (usb || ser) ? "USB" : ble ? "BT" : "Off";
+      els.statusText.textContent = on ? ((ser || gen2Usb) ? "USB" : "BT") : "Off";
+      els.app.classList.toggle("gen1", state.gen1 === true);   // gen-1: no FX → instrument dropdown shows directly (see CSS)
       const fxs = document.getElementById("fxSliders");   // Orba 1 has no volume/reverb/delay; show only the instrument
       if (fxs) fxs.style.display = state.gen1 ? "none" : "";
       if (!on) $("#keyChip").classList.remove("show");   // no device, no key chip
@@ -1800,6 +1817,14 @@
     }
 
     const seqGrids = [];
+    const seqDots = [], dotTimers = [null, null, null, null], partLive = [false, false, false, false];
+    function flashPart(pi) {                       // a note landed on part pi → pulse its lane dot until the notes stop
+      if (pi == null || pi < 0 || pi > 3) return;
+      partLive[pi] = true;
+      const d = seqDots[pi]; if (d) d.classList.add("live");
+      clearTimeout(dotTimers[pi]);
+      dotTimers[pi] = setTimeout(() => { partLive[pi] = false; const dd = seqDots[pi]; if (dd) dd.classList.remove("live"); }, 200);
+    }
     function updateSeqGrids(beatNow) {
       const active = seqClock.running && beatNow >= 0;
       for (let pi = 0; pi < 4; pi++) {
@@ -1831,6 +1856,9 @@
       for (const pi of [3, 2, 1, 0]) {            // visual order: Drum, Bass, Chord, Lead (logical indices unchanged)
         const lane = document.createElement("div");
         lane.className = "lane";
+        const livedot = document.createElement("span");           // live-play indicator (pulses on incoming notes)
+        livedot.className = "livedot" + (partLive[pi] ? " live" : "");
+        lane.append(livedot); seqDots[pi] = livedot;
         lane.classList.toggle("has", seqEngine.hasContent(pi));
         const armable = seqEngine.recEnabled[pi];
         lane.classList.toggle("recing", (seqEngine.recording || seqEngine.armed || seqEngine.preroll) && armable);
@@ -2144,7 +2172,8 @@
        imported mapping lines up with the hardware.
        DOIO layer 2: row1 part keys, row2 solo, row3 mute, row4 spares X/Y/Z.
        DOIO layer 3: letters A-P + Q-V on knobs (placeholders, action "empty"). */
-    const DEFAULT_MAPPINGS = {};   // shipped empty; import a mapping in the gear panel
+    // DOIO KB16 (orba-doio firmware): part select · solo/mute · transport · key/scale · the knobs. Load via the gear panel's "DOIO" preset.
+    const DEFAULT_MAPPINGS = {"F14":{"action":"instrPrev","label":"big knob ↺"},"F16":{"action":"instrNext","label":"big knob ↻"},"F17":{"action":"reverbDown","label":"knob A ↺"},"F18":{"action":"reverbUp","label":"knob A ↻"},"F19":{"action":"delayDown","label":"knob B ↺"},"F24":{"action":"delayUp","label":"knob B ↻"},"Minus":{"action":"partDrum","led":0,"color":[127,20,0],"label":"drum"},"Equal":{"action":"partBass","led":1,"color":[0,60,127],"label":"bass"},"Backquote":{"action":"partChord","led":2,"color":[0,127,30],"label":"chord"},"BracketLeft":{"action":"partLead","led":3,"color":[110,0,127],"label":"lead"},"Digit1":{"action":"soloToggleDrum","led":4,"label":"solo drum"},"Digit2":{"action":"soloToggleBass","led":5,"label":"solo bass"},"Digit3":{"action":"soloToggleChord","led":6,"label":"solo chord"},"Digit4":{"action":"soloToggleLead","led":7,"label":"solo lead"},"Digit5":{"action":"muteToggleDrum","led":8,"label":"mute drum"},"Digit6":{"action":"muteToggleBass","led":9,"label":"mute bass"},"Digit7":{"action":"muteToggleChord","led":10,"label":"mute chord"},"Digit8":{"action":"muteToggleLead","led":11,"label":"mute lead"},"KeyX":{"action":"seqRecToggle","led":13,"label":"rec"},"KeyY":{"action":"seqPlayStop","led":14,"label":"play/stop"},"KeyZ":{"action":"seqMetronome","led":15,"label":"metronome"},"KeyA":{"action":"empty","led":0,"label":"L3 key 1"},"KeyB":{"action":"empty","led":1,"label":"L3 key 2"},"KeyC":{"action":"empty","led":2,"label":"L3 key 3"},"KeyD":{"action":"empty","led":3,"label":"L3 key 4"},"KeyE":{"action":"empty","led":4,"label":"L3 key 5"},"KeyF":{"action":"empty","led":5,"label":"L3 key 6"},"KeyG":{"action":"empty","led":6,"label":"L3 key 7"},"KeyH":{"action":"empty","led":7,"label":"L3 key 8"},"KeyI":{"action":"empty","led":8,"label":"L3 key 9"},"KeyJ":{"action":"empty","led":9,"label":"L3 key 10"},"KeyK":{"action":"empty","led":10,"label":"L3 key 11"},"KeyL":{"action":"empty","led":11,"label":"L3 key 12"},"KeyN":{"action":"empty","led":13,"label":"L3 key 14"},"KeyO":{"action":"empty","led":14,"label":"L3 key 15"},"KeyP":{"action":"empty","led":15,"label":"L3 key 16"},"KeyQ":{"action":"keyDown","label":"key −"},"KeyR":{"action":"keyUp","label":"key +"},"KeyS":{"action":"scalePrev","label":"scale −"},"KeyT":{"action":"scaleNext","label":"scale +"},"KeyU":{"action":"empty","label":"L3 big knob ↺"},"KeyV":{"action":"empty","label":"L3 big knob ↻"}};
     // LED index per physical DOIO key, by keycode (matches the orba-doio KB16 firmware).
     // Grid is row-major: key 1 (top-left) = LED 0 … key 16 = LED 15; 12 = layer key.
     const DOIO_LED_BY_CODE = {
@@ -2255,7 +2284,7 @@
       const type = data[0] & 0xf0;
       if (type < 0x80 || type > 0xe0 || type === 0xc0) return;   // channel-voice only; drop program-change
       noteViz.ingest(srcName || "MIDI", data);                   // preview shows the playing regardless of routing
-      if (fwdMute || !orbaReady()) return;
+      if (fwdMute || (!usbOut && !state.char)) return;   // forward notes wherever there's an output (a gen-1's MIDI port counts here)
       const dstPart = routedPart(srcName);
       if (dstPart === null) return;                              // device muted by routing
       noteEd.liveInput(dstPart, data);                           // live overlay in the open editor
@@ -2264,6 +2293,8 @@
       const d1 = data[1], d2 = data[2];
       const noteOn  = type === 0x90 && d2 > 0;
       const noteOff = type === 0x80 || (type === 0x90 && d2 === 0);
+      if (noteOn) flashPart(dstPart);                            // pulse the mapped part's lane dot
+
       if (usbOut) {                                              // ---- USB: port = part, channel 1 ----
         let idx = USB_PART_PORT[dstPart] ?? dstPart;
         if (noteOff && fwdNotes.has(d1)) idx = fwdNotes.get(d1);   // note-off follows its note-on's port
@@ -2305,6 +2336,7 @@
       const usbAppeared = outs.length && !usbOut;
       usbOuts = outs;
       usbOut = outs[0] || null;   // SysEx control + sync go here (register writes are global, port-agnostic)
+      gen1Midi = !!usbOut && isOrbaPort(usbOut) && !isOrba2Port(usbOut);   // gen-1's MIDI port = notes only; its control needs CDC (Connect → Wired)
       if (inp !== usbIn) {                                  // Orba USB input → feed replies (sync + PC burst)
         if (usbIn) usbIn.onmidimessage = null;
         usbIn = inp;
@@ -2314,8 +2346,12 @@
         if (isOrbaPort(i) || isKb16Port(i)) continue;
         i.onmidimessage = e => forwardMidi(Array.from(e.data), i.name);
       }
+      refreshGen1();                                        // gen-1 MIDI port ↔ gen-1 UI/library
       updateConnUI();
-      if (usbAppeared) { msg("Orba connected (USB)"); readDeviceState(); }   // auto-sync the moment it's cabled in
+      if (usbAppeared) {                                    // a gen-1's MIDI port carries notes only — control needs CDC (Connect → Wired)
+        if (gen1Midi) msg("Orba 1 detected — tap Connect for USB control");
+        else { msg("Orba connected (USB)"); readDeviceState(); }
+      }
     }
 
     async function initMidi() {
@@ -2372,13 +2408,10 @@
       if (state.char) { try { state.device.gatt.disconnect(); } catch (e) {} return; }   // BLE drops via gattserverdisconnected
       if (usbOut) { msg("Unplug the USB cable to disconnect."); return; } // gen-2 USB-MIDI has no soft disconnect
     }
-    els.connectBtn.addEventListener("click", () => (usbDevice || state.char || usbOut) ? disconnectActive() : openConnChooser());
-    async function pickWired() {                                          // wired = gen-1 CDC; filter hides gen-2 from the chooser
-      connOverlay.classList.remove("open");
-      if (navigator.usb) {                                               // reuse an existing grant silently; only prompt if never granted
-        try { const d = (await navigator.usb.getDevices()).find(x => x.productId === 0x5740 && x.vendorId === 0x0000); if (d) { gen1Present = true; await openSerial(d); return; } } catch (e) {}
-      }
-      connectSerial();
+    els.connectBtn.addEventListener("click", () => orbaReady() ? disconnectActive() : openConnChooser());
+    function pickWired() {                                                // wired = gen-1 CDC. Call requestDevice() straight from the tap —
+      connOverlay.classList.remove("open");                              // an await first can drop the user gesture and the grant silently fails.
+      connectSerial();                                                   // prompts once; load-time getDevices() auto-reconnects a granted device after.
     }
     $("#pickWired").addEventListener("click", pickWired);
     $("#pickBle").addEventListener("click", () => { connOverlay.classList.remove("open"); connectBle(); });
@@ -2508,7 +2541,7 @@
         const s = JSON.parse(localStorage.getItem(MAPPRESET_KEY));
         if (s && Object.keys(s).length) return s;
       } catch {}
-      return { "doio default": structuredClone(DEFAULT_MAPPINGS) };   // always something to duplicate from
+      return { "DOIO": structuredClone(DEFAULT_MAPPINGS) };   // the bundled DOIO KB16 map; duplicate/edit from here
     }
     const saveMapPresets = s => localStorage.setItem(MAPPRESET_KEY, JSON.stringify(s));
     const mapPresetSel = $("#mapPresetSel");
@@ -3115,6 +3148,11 @@
       if (usbDevice && Date.now() - gen1LastRx > 1500) { closeSerial(); msg("Orba 1 disconnected."); return; }
       if (orbaReady()) sendPayload(orba.getActivePart(), "poll active part");
     }, 200);
+    // Drop focus from a tapped button/select so mapped keyboard/DOIO keys reach the global handler
+    // instead of the focused control (a focused select otherwise type-aheads "4"/"8" into the loop length).
+    // Text-entry fields are never touched, so typing (learn-a-key, scale names) still works.
+    document.addEventListener("click", e => { e.target.closest("button")?.blur(); });
+    document.addEventListener("change", e => { if (e.target.tagName === "SELECT") e.target.blur(); });
     (function trackPublishedUse() {
       const expectedOrigin = "https://holofermes.github.io";
       const expectedPathPrefix = "/orba-console/";
