@@ -371,7 +371,24 @@
       "filename": "An Orbasong.song",
       "tempo": "120.0",
       "description": "Hello! Orbasong is an excellent place to begin your journey. &quot;What's a song?&quot; you might ask. A song is a collection of sound Presets, a key &amp; tempo, artwork, descriptor #tags, and all of the #orbaloops you record.",
-      "presets": {}
+      "presets": {
+        "drum": {
+          "name": "Orba",
+          "filename": "Orba.orbapreset"
+        },
+        "bass": {
+          "name": "Orba",
+          "filename": "Orba.orbapreset"
+        },
+        "chord": {
+          "name": "Orba",
+          "filename": "Orba.orbapreset"
+        },
+        "lead": {
+          "name": "Orba",
+          "filename": "Orba.orbapreset"
+        }
+      }
     },
     {
       "name": "Bedroom",
@@ -510,6 +527,10 @@
         "chord": {
           "name": "Grapefruit",
           "filename": "Grapefruit.orbapreset"
+        },
+        "lead": {
+          "name": "Grapefruit",
+          "filename": "Grapefruit.orbapreset"
         }
       }
     },
@@ -530,6 +551,10 @@
         "lead": {
           "name": "Lifelike",
           "filename": "Lifelike.orbapreset"
+        },
+        "drum": {
+          "name": "Pieces",
+          "filename": "Pieces.orbapreset"
         }
       }
     },
