@@ -102,10 +102,12 @@
     .connect.on { background: var(--panel-2); border-color: var(--line); font-weight: 400; color: var(--muted); }
     .iconbtn { min-height: 46px; min-width: 44px; padding: 0 8px; font-size: 18px; flex: 0 0 auto; }
     .keychip {
-      display: none; min-height: 46px; padding: 0 9px; font-size: 12px; flex: 0 0 auto;
-      border-radius: 10px; background: var(--panel); white-space: nowrap;
+      display: none; min-height: 46px; padding: 0 9px; flex: 0 0 auto;
+      border-radius: 10px; background: var(--panel); white-space: nowrap; line-height: 1.05;
     }
-    .keychip.show { display: inline-flex; align-items: center; }
+    .keychip.show { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; }
+    .keychip .knm { font-weight: 600; font-size: 14px; }
+    .keychip .ksc { font-size: 10px; color: var(--muted); }
     .seqclock .bpm { cursor: pointer; }
     .iconbtn.on { background: color-mix(in srgb, var(--accent-2) 30%, var(--panel-2)); border-color: color-mix(in srgb, var(--accent-2) 62%, var(--line)); }
 
@@ -379,7 +381,7 @@
     <div class="viz" id="noteViz"></div>
 
     <div class="msg" id="msg">Plug in an Orba, or tap Connect.</div>
-    <footer class="appfoot"><button id="helpBtn" class="helpdot" title="Keyboard & gesture shortcuts" aria-label="Shortcuts">?</button><a href="https://github.com/holofermes/orba-console" target="_blank" rel="noopener">source on GitHub</a></footer>
+    <footer class="appfoot"><button id="helpBtn" class="helpdot" title="Keyboard & gesture shortcuts" aria-label="Shortcuts">?</button><a class="ghlink" href="https://github.com/holofermes/orba-console" target="_blank" rel="noopener" title="Source on GitHub" aria-label="Source on GitHub"><svg viewBox="0 0 16 16" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></a></footer>
   </div>
 
   <div class="overlay" id="connOverlay">
@@ -440,8 +442,10 @@
         <button class="learn" id="learnBtn">+ Learn a key…</button>
         <p class="doio-note">LED and OLED control here is for the <a href="https://github.com/holofermes/orba-doio" target="_blank" rel="noopener">DOIO KB16</a> running the matching firmware.</p>
       </details>
-      <h2>MIDI device → part</h2>
-      <div id="devList"></div>
+      <div id="routeSection">
+        <h2>MIDI device → part</h2>
+        <div id="devList"></div>
+      </div>
       <h2>Orba device</h2>
       <div class="devrow"><span class="nm">MIDI mode</span>
         <select id="orbaMidiMode">
@@ -503,13 +507,11 @@
         <div class="helprow"><kbd>🔔 tap</kbd><span>Tap tempo</span></div>
         <div class="helprow"><kbd>🔔 hold</kbd><span>Metronome click on / off</span></div>
         <div class="helprow"><kbd>⏺ tap</kbd><span>Record into the active part</span></div>
-        <div class="helprow"><kbd>⏺ hold</kbd><span>Clear the active part</span></div>
         <div class="helpsec">Parts</div>
         <div class="helprow"><kbd>tap</kbd><span>Select a part</span></div>
         <div class="helprow"><kbd>hold</kbd><span>Solo / un-solo that part</span></div>
         <div class="helpsec">Looper tracks</div>
         <div class="helprow"><kbd>snap</kbd><span>Cycle off → grid → groove</span></div>
-        <div class="helprow"><kbd>🎹 tap</kbd><span>Mute / unmute USB keyboard forwarding</span></div>
         <div class="helprow"><kbd>saved ×</kbd><span>Tap twice to delete a saved preset</span></div>
         <div class="helpsec">Note editor</div>
         <div class="helprow"><kbd>Space</kbd><span>Play / pause</span></div>
@@ -574,9 +576,10 @@
 
     const $ = sel => document.querySelector(sel);
     const els = {
-      app: $("#app"), status: $("#status"), statusText: $("#statusText"),
-      connectBtn: $("#connectBtn"), midiBtn: $("#midiBtn"), parts: $("#parts"),
+      app: $("#app"),
+      connectBtn: $("#connectBtn"), parts: $("#parts"),
       instrSelect: $("#instrSelect"), instLab: $("#instLab"), libSelect: $("#libSelect"),
+      usbModeRow: $("#usbModeRow"), usbAutoRow: $("#usbAutoRow"), usbModeSel: $("#usbModeSel"), usbAutoPorts: $("#usbAutoPorts"), routeSection: $("#routeSection"),
       playPauseBtn: $("#playPauseBtn"), recBtn: $("#recBtn"),
 
       msg: $("#msg"),
@@ -620,9 +623,10 @@
     async function connectBle() {
       if (!navigator.bluetooth) { msg("Web Bluetooth is not available in this browser. Plug in over USB instead."); return; }
       acquireWakeLock();   // user gesture, best chance to grab the screen lock
+      teardownBle(true);   // start from a clean slate — close any prior or half-open GATT link before opening a new one
+      let device = null, characteristic = null;
       try {
         msg(bleShowAll ? "Opening chooser (all devices)…" : "Opening chooser…");
-        let device;
         try {
           device = await navigator.bluetooth.requestDevice(bleShowAll ? BLE_ALL : BLE_FILTERED);
         } catch (e) {
@@ -639,34 +643,63 @@
         device.addEventListener("gattserverdisconnected", onBleDisconnected);
         const server = await device.gatt.connect();
         const service = await server.getPrimaryService(BLE_MIDI_SERVICE_UUID);
-        const characteristic = await service.getCharacteristic(BLE_MIDI_CHARACTERISTIC_UUID);
+        characteristic = await service.getCharacteristic(BLE_MIDI_CHARACTERISTIC_UUID);
         await characteristic.startNotifications();
         characteristic.addEventListener("characteristicvaluechanged", onBleMidiMessage);
+        if (usbOut) { if (usbIn) usbIn.onmidimessage = null; usbIn = null; usbOut = null; usbOuts = []; usbSoftOff = true; }   // BLE wins: drop the USB-MIDI port so we don't have two writers on one pipe (on Android it's the same BLE link)
         state.device = device; state.char = characteristic; bleParser.reset();
+        const nm = (device.name || "") + (device.gatt?.device?.name || "");   // gen-1 advertises "Orba", gen-2 "Orba 2"
+        gen1Ble = /orba/i.test(nm) && !/orba\s*2/i.test(nm);
+        await refreshGen1();                                                   // BLE gen-1 → gen-1 UI + preset library
         updateConnUI();
-        msg(`Connected (BLE): ${device.name || "Orba"}`);
+        msg(`Connected (BLE): ${device.name || "Orba"}${gen1Ble ? " [Orba 1]" : ""}`);
         readDeviceState();
-      } catch (e) { msg(`Connect failed: ${e.message || e}`); }
+      } catch (e) {
+        // failure mid-connect → close the half-open GATT link so the phone's BLE stack doesn't leak a zombie connection
+        try { characteristic && characteristic.removeEventListener("characteristicvaluechanged", onBleMidiMessage); } catch (e2) {}
+        try { characteristic && characteristic.stopNotifications(); } catch (e2) {}
+        try { device && device.removeEventListener("gattserverdisconnected", onBleDisconnected); } catch (e2) {}
+        try { if (device && device.gatt && device.gatt.connected) device.gatt.disconnect(); } catch (e2) {}
+        state.char = null; state.device = null; gen1Ble = false;
+        msg(`Connect failed: ${e.message || e}`);
+      }
+    }
+    function teardownBle(disconnect) {   // fully release a BLE session so repeated connects don't leak GATT links / listeners / subscriptions
+      const dev = state.device, ch = state.char;
+      if (ch) {
+        try { ch.removeEventListener("characteristicvaluechanged", onBleMidiMessage); } catch (e) {}
+        try { ch.stopNotifications(); } catch (e) {}                        // frees the peripheral's notify subscription
+      }
+      if (dev) {
+        try { dev.removeEventListener("gattserverdisconnected", onBleDisconnected); } catch (e) {}
+        if (disconnect && dev.gatt && dev.gatt.connected) { try { dev.gatt.disconnect(); } catch (e) {} }
+      }
+      state.char = null; state.device = null; gen1Ble = false; bleParser.reset();
     }
     function onBleDisconnected() {
-      state.char = null; bleParser.reset(); updateConnUI(); msg("BLE disconnected.");
+      teardownBle(false);   // GATT already dropped by the peer; release listeners/notifications/state
+      if (!usbDevice && usbOut) { if (usbIn) usbIn.onmidimessage = null; usbIn = null; usbOut = null; usbOuts = []; }   // drop the now-idle paired MIDI port so status clears
+      refreshGen1(); updateConnUI(); msg("BLE disconnected.");
     }
 
     /* ---- transport router: send to the Orba over USB if it's cabled, else BLE ---- */
     let usbOut = null, usbOuts = [], usbIn = null;   // Orba USB ports: usbOuts[i] drives part i; usbOut[0] for SysEx
+    let usbSoftOff = false;                          // gen-2 USB-MIDI can't be unbound; eject soft-drops it and suppresses auto-reattach until Connect/replug
     // Orba 1 (gen-1): control is raw ArtiComm over Web Serial (CDC), not USB-MIDI. Preset = audio-engine patch apply.
     let usbDevice = null, gen1Present = false, gen1Patches = null, gen1Offsets = null, gen1Drums = null;
     const GEN1_BASE = orba.SYNTH_BASE;   // per-part audio-engine base addr (drum 0x1000 / bass 0x2000 / chord 0x3000 / lead 0x4000)
-    let midiAccess = null, fwdMute = false; // Web MIDI access + 🎹 mute override
+    let midiAccess = null; // Web MIDI access (keyboard forwarding is always on)
     const fwdNotes = new Map();             // note -> channel it was sent on (clean note-offs across part switches)
     const isOrbaPort = p => /orba/i.test((p.name || "") + (p.manufacturer || ""));
     const isOrba2Port = p => /orba\s*2/i.test((p.name || "") + (p.manufacturer || ""));   // gen-2 ("Orba 2"); gen-1 = isOrbaPort && !this
+    const isBleMidiPort = p => /bluetooth|\bble\b/i.test((p && p.name || "") + (p && p.manufacturer || ""));   // Linux: BlueZ exposes a BLE Orba as a MIDI port
     let gen1Midi = false;   // the Orba's own USB-MIDI port is present and is a gen-1 (notes only — its control link is CDC/BLE, not MIDI)
+    let gen1Ble  = false;   // the BLE-connected Orba is a gen-1 (by advertised name: "Orba" not "Orba 2")
     const isKb16Port = p => /kb16|doio/i.test((p.name || "") + (p.manufacturer || ""));
     function orbaReady() { return !!usbDevice || !!state.char || (!!usbOut && !gen1Midi); }   // CONTROL established (a gen-1's USB-MIDI port is notes-only)
     function sendToOrba(bytes) {
+      if (state.char) { sendBleMidi(bytes); return true; }   // a live BLE GATT is the real link; the Orba's paired MIDI port is idle
       if (usbOut) { try { usbOut.send(bytes); } catch (e) { msg("USB send failed (allow MIDI access?)"); } return true; }
-      if (state.char) { sendBleMidi(bytes); return true; }
       return false;
     }
     async function sendPayload(payload, label) {
@@ -710,7 +743,7 @@
     }
     let gen1Rx = [];                                 // rolling CDC receive buffer (raw bytes)
     let gen1WriteChain = Promise.resolve();          // serialize transferOut on the shared bulk pipe
-    let gen1Reading = false;                          // single-reader guard for the IN endpoint
+    let gen1ReadGen = 0;                              // per-connection token so a new openSerial always starts a fresh reader (a boolean guard can wedge if the old loop's transferIn is still pending)
     let gen1LastRx = 0;                                // time of the last frame from the device (disconnect watchdog)
     function sendSerial(payload) {                    // write-only; the read loop consumes acks + GET replies
       if (!usbDevice) return Promise.resolve();
@@ -738,10 +771,9 @@
       }
     }
     async function gen1ReadLoop() {                   // continuously drain the IN endpoint while connected
-      if (gen1Reading) return;
-      gen1Reading = true;
       const dev = usbDevice;
-      while (usbDevice === dev) {
+      const myGen = ++gen1ReadGen;                    // supersede any prior loop; it exits when it sees it's stale
+      while (usbDevice === dev && gen1ReadGen === myGen) {
         let r;
         try { r = await dev.transferIn(1, 64); }
         catch (e) { break; }                          // device closed / unplugged
@@ -819,7 +851,8 @@
       // the mixer (0x50xx), so the part's volume/FX stay as set.
       const writes = [];
       for (const nm in gen1Offsets) writes.push([base + gen1Offsets[nm], (patch[nm] | 0) & 0xff]);
-      await sendPayload(orba.audioEngineWrites(writes));
+      await sendAudioEngine(writes);
+      await sendPayload(nameWrite(partKey, key), "set name");   // so it reads back on reconnect
     }
 
     /* ===================================================================
@@ -917,20 +950,22 @@
       }
     }
 
+    const GEN1_MODE_LABELS = new Set(["Drums", "Bass", "Chords", "Lead"]);   // gen-1 name register defaults to the mode label until we write an instrument name
     function applyName(key, name) {
-      if (!name) return;
       if (key === "song") return;   // current song no longer mirrored in a dropdown
+      name = (name || "").trim();
+      if (state.gen1 && GEN1_MODE_LABELS.has(name)) name = "";   // nothing loaded by the console yet → blank, not "Drums"
+      if (!name && !state.gen1) return;   // gen-2: don't clobber a good name with an empty read
       state.partName[key] = name;
       updateFxSummary();
-      // reflect on the part button
       const inst = document.querySelector(`[data-inst="${key}"]`);
-      if (inst) inst.textContent = name;
-      // map name → filename via library (so saved presets know the file)
-      const lib = state.library?.presets?.[key] || [];
-      const hit = lib.find(p => normName(p.name) === normName(name));
-      if (hit) state.partFile[key] = hit.filename;
-      // if it's the active part, reflect in the dropdown
-      if (PARTS[state.part].key === key) selectByName(els.instrSelect, name);
+      if (inst) inst.textContent = name || "—";
+      if (name) {
+        const lib = state.library?.presets?.[key] || [];
+        const hit = lib.find(p => normName(p.name) === normName(name));
+        if (hit) state.partFile[key] = hit.filename;
+        if (PARTS[state.part].key === key) selectByName(els.instrSelect, name);
+      }
     }
     const normName = s => (s || "").replace(/^_+/, "").trim().toLowerCase();   // factory presets carry a leading "_" marker
     function selectByName(select, name) {
@@ -1024,7 +1059,7 @@
 
     function readDeviceState() {
       sendPayload(orba.getActivePart(), "get part");      // → applyActivePart
-      scheduleNamesRead(450);
+      scheduleNamesRead(450);   // preset names per part (gen-1 stores names we wrote on load)
       readAllFx();    // all 4 parts' volumes/fx, needed so solo can be DEDUCED, not remembered
       for (let p = 0; p < 4; p++) sendPayload(orba.getQuantize(p), "get quantize");   // per-part device truth (all 4 lanes)
       sendPayload(orba.getTempo(), "get tempo");      // seed our clock from the device BPM
@@ -1060,6 +1095,7 @@
         b.classList.toggle("ducked", !state.gen1 && volsKnown && state.fxCache[PARTS[p].key].volume === 0);
       }
       els.instLab.textContent = PARTS[state.part].name;
+      for (const p of PARTS) { const el = document.querySelector(`[data-inst="${p.key}"]`); if (el) el.textContent = state.partName[p.key] || "—"; }   // cards mirror the device-read instrument names
       const key = PARTS[state.part].key;
       for (const kind of FX_KINDS) setFxSlider(kind, state.fxCache[key][kind] ?? (kind === "volume" ? 100 : 0));
       renderKb16();
@@ -2315,7 +2351,7 @@
       const type = data[0] & 0xf0;
       if (type < 0x80 || type > 0xe0 || type === 0xc0) return;   // channel-voice only; drop program-change
       noteViz.ingest(srcName || "MIDI", data);                   // preview shows the playing regardless of routing
-      if (fwdMute || (!usbOut && !state.char)) return;   // forward notes wherever there's an output (a gen-1's MIDI port counts here)
+      if (!usbOut && !state.char) return;   // forward notes wherever there's an output (a gen-1's MIDI port counts here)
       const dstPart = routedPart(srcName);
       if (dstPart === null) return;                              // device muted by routing
       noteEd.liveInput(dstPart, data);                           // live overlay in the open editor
@@ -2326,7 +2362,7 @@
       const noteOff = type === 0x80 || (type === 0x90 && d2 === 0);
       if (noteOn) flashPart(dstPart);                            // pulse the mapped part's lane dot
 
-      if (usbOut) {                                              // ---- USB: port = part, channel 1 ----
+      if (usbOut) {                                              // ---- USB: port = part, channel 1 (4 per-voice ports route to 4 parts; BLE is a single merged link, useless for routing) ----
         let idx = USB_PART_PORT[dstPart] ?? dstPart;
         if (noteOff && fwdNotes.has(d1)) idx = fwdNotes.get(d1);   // note-off follows its note-on's port
         idx = Math.min(idx, usbOuts.length - 1);
@@ -2414,7 +2450,7 @@
       });
     }
     $("#seqPlay").addEventListener("click", () => seqPlayStop());
-    wireHold($("#seqRec"), seqRecTap, seqRecHold, seqRecTap);
+    $("#seqRec").addEventListener("pointerdown", e => { e.preventDefault(); seqRecTap(); });   // tap toggles record (hold-to-clear removed; use each lane's Clear)
     wireHold($("#seqMet"), seqTapTempo, seqMetHold);
     $("#seqLen").addEventListener("change", () => {
       const v = $("#seqLen").value;
