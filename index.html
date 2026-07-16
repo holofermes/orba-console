@@ -751,16 +751,15 @@
         }
         if (r && r.status === "stall") { try { await dev.clearHalt("in", 1); } catch (e) { break; } }
       }
-      gen1Reading = false;
-      if (usbDevice === dev) closeSerial();            // transferIn errored while still "connected" → device gone
+      if (usbDevice === dev && gen1ReadGen === myGen) closeSerial();   // transferIn errored while still "connected" → device gone
     }
     async function connectSerial() {
       if (!navigator.usb) { msg("WebUSB needs Chrome (desktop or Android)."); return; }
       try { await openSerial(await navigator.usb.requestDevice({ filters: [ORBA1_USB] })); }
       catch (e) { /* user cancelled the picker */ }
     }
-    async function refreshGen1() {   // state.gen1 = a gen-1 is in play (CDC-connected OR its USB-MIDI port present); swap the preset library on change
-      const want = !!usbDevice || gen1Midi;
+    async function refreshGen1() {   // state.gen1 = a gen-1 is in play (CDC-connected, its USB-MIDI port present, or BLE-connected as gen-1)
+      const want = !!usbDevice || gen1Midi || gen1Ble;
       if (state.gen1 === want) return;
       state.gen1 = want;
       await loadLibrary();
@@ -792,6 +791,17 @@
       if (d) d.close().catch(() => {});              // best-effort close in the background (can hang on a powered-off device)
     }
     function disconnectGen1() { gen1Present = false; closeSerial(); msg("Orba 1 disconnected."); }
+    async function sendAudioEngine(writes) {   // USB CDC takes the whole patch in one raw packet; BLE-MIDI reassembly is small, so chunk
+      if (usbDevice) { await sendPayload(orba.audioEngineWrites(writes)); return; }
+      for (let i = 0; i < writes.length; i += 30) await sendPayload(orba.audioEngineWrites(writes.slice(i, i + 30)));
+    }
+    function nameWrite(key, name) {   // gen-1 can't report its instrument, but it persists a name we write to its name register (survives reconnect)
+      const addr = NAME_ADDR[key]; if (addr == null) return null;
+      const b = new Array(63).fill(0);
+      const s = String(name || "").slice(0, 63);
+      for (let i = 0; i < s.length; i++) b[i] = s.charCodeAt(i) & 0x7f;
+      return [0x03, 0x03, (addr >> 8) & 0xff, addr & 0xff, ...b];   // SET domain 0x03 @ name addr, 63-byte padded name
+    }
     async function applyGen1Patch(partKey, filename) {
       await loadGen1Data();
       const base = GEN1_BASE[partKey];
@@ -799,7 +809,8 @@
       if (partKey === "drum") {                                 // whole kit = 172 audio-engine writes at absolute addrs
         const kit = gen1Drums && gen1Drums[key];
         if (!kit) { msg(`No Orba 1 drum kit: ${key}`); return; }
-        await sendPayload(orba.audioEngineWrites(kit));         // whole kit = one batch of absolute [addr,val] writes to base 0x1000
+        await sendAudioEngine(kit);                            // absolute [addr,val] writes to base 0x1000 (chunked on BLE)
+        await sendPayload(nameWrite(partKey, key), "set name");   // so it reads back on reconnect
         return;
       }
       const patch = gen1Patches[partKey] && gen1Patches[partKey][key];
@@ -881,6 +892,17 @@
         return;
       }
       if (domain === 0x03 && addr === 0x000e && payload.length >= 5) { orbaCtx.pbRange = payload[4]; return; }
+      // USB port layout (01 01 00 15 <mode>): 0 = four per-voice ports (external MIDI routes to parts), 1 = one merged port
+      if (domain === 0x01 && addr === 0x0015 && payload.length >= 5) {
+        orbaCtx.usbMode = payload[4];
+        if (autoPorts && orbaCtx.usbMode !== 0) {   // keep 4 ports so external-MIDI routing survives a device reset
+          sendPayload(orba.setUsbMode(0), "auto 4 ports");
+          orbaCtx.usbMode = 0;
+          msg("Orba set to 4 separate USB ports");
+        }
+        updateUsbModeUI();
+        return;
+      }
       // per-part FX reply (02 02 50 <param> <val>)
       if (domain === 0x02 && payload[2] === 0x50 && payload.length >= 5) {
         const param = payload[3], val = payload[4];
@@ -986,7 +1008,7 @@
       const chip = $("#keyChip");
       const known = orbaCtx.root != null && orbaCtx.scale != null;
       chip.classList.toggle("show", known);
-      if (known) chip.textContent = `${ROOTS[((orbaCtx.root % 12) + 12) % 12]} · ${scaleName(orbaCtx.scale)}`;
+      if (known) chip.innerHTML = `<span class="knm">${ROOTS[((orbaCtx.root % 12) + 12) % 12]}</span><span class="ksc">${scaleName(orbaCtx.scale)}</span>`;
     }
     function setOrbaKey(root, scale) {
       if (root != null) orbaCtx.root = ((root % 12) + 12) % 12;
@@ -1010,6 +1032,7 @@
       sendPayload(orba.getScale(), "get scale");
       sendPayload(orba.getMidiMode(), "get midi mode");  // → pinned to per-part if drifted
       sendPayload(orba.getPitchBendRange(), "get pb range");
+      sendPayload(orba.getUsbMode(), "get usb mode");    // → 4-port state; auto-set below if drifted
     }
     function readAllFx() { for (let p = 0; p < 4; p++) readPartFx(p); }
 
@@ -1063,39 +1086,57 @@
     =================================================================== */
     // Reflect the live connection: prefer USB (auto) over BLE (tap-to-connect).
     function updateConnUI() {
-      const ser = !!usbDevice, ble = !!state.char, gen2Usb = !!usbOut && !gen1Midi, on = ser || ble || gen2Usb;
-      els.status.classList.toggle("connected", on);
+      const ser = !!usbDevice;
+      const bleMidi = !!usbOut && isBleMidiPort(usbOut);   // Linux: BlueZ exposes a BLE Orba as a MIDI port — that's a BT link, not USB
+      const ble = !!state.char || bleMidi;
+      const gen2Usb = !!usbOut && !gen1Midi && !bleMidi;   // a real USB-cable MIDI port (gen-2)
+      const on = ser || ble || gen2Usb;
+      if (!on) for (const p of PARTS) { state.partName[p.key] = ""; state.partFile[p.key] = ""; const el = document.querySelector(`[data-inst="${p.key}"]`); if (el) el.textContent = "—"; }   // disconnected → clear stale instrument names
       els.app.classList.toggle("connected", on);
-      els.statusText.textContent = on ? ((ser || gen2Usb) ? "USB" : "BT") : "Off";
       els.app.classList.toggle("gen1", state.gen1 === true);   // gen-1: no FX → instrument dropdown shows directly (see CSS)
       const fxs = document.getElementById("fxSliders");   // Orba 1 has no volume/reverb/delay; show only the instrument
       if (fxs) fxs.style.display = state.gen1 ? "none" : "";
       if (!on) $("#keyChip").classList.remove("show");   // no device, no key chip
-      // one smart button, always present: "Connect" when off (opens the chooser), compact ⏏ when connected (disconnects)
-      els.connectBtn.textContent = on ? "⏏" : "Connect";
+      // one fixed-width button: "Connect" when off (opens the chooser), "⏏ USB"/"⏏ BT" when connected (ejects)
+      els.connectBtn.textContent = on ? ("⏏ " + ((ser || gen2Usb) ? "USB" : "BT")) : "Connect";
       els.connectBtn.title = on ? "Disconnect" : "Connect an Orba";
       els.connectBtn.classList.toggle("on", on);
-      els.connectBtn.classList.toggle("iconish", on);
-      // 🎹 = status light: lit when a keyboard is present and forwarding live
-      const kbd = Array.from(midiAccess?.inputs.values() || []).filter(p => !isOrbaPort(p) && !isKb16Port(p));
-      els.midiBtn.classList.toggle("on", kbd.length > 0 && !fwdMute && on);
-      els.midiBtn.title = !kbd.length ? "No MIDI keyboard detected"
-        : fwdMute ? "Keyboard muted, tap to enable"
-        : "Auto-forwarding: " + kbd.map(p => p.name).join(", ");
       // controls live whenever the Orba is reachable (USB or BLE)
       const ctrls = [els.instrSelect, els.playPauseBtn, els.recBtn,
         ...els.parts.querySelectorAll("button"), ...document.querySelectorAll("input[data-fx]")];
       for (const c of ctrls) c.disabled = !on;
+      updateUsbModeUI();
+    }
+    // USB port layout is a USB-only capability (the 4 per-voice ports don't exist over BLE);
+    // grey the control out on BT so its disabled state IS the "single-part on Bluetooth" cue.
+    let autoPorts = localStorage.getItem("orbaAutoPorts") !== "0";   // default ON: keep the Orba's 4 USB ports
+    function usbControlLive() { return !!usbDevice || (!!usbOut && !gen1Midi && !isBleMidiPort(usbOut)); }   // can read/set the mode
+    function usbRoutingLive() { return !!usbDevice || (!!usbOut && !isBleMidiPort(usbOut)); }                // real USB cable → per-part ports exist
+    function updateUsbModeUI() {
+      const live = usbControlLive();
+      els.usbModeRow.classList.toggle("off", !live);
+      els.usbAutoRow.classList.toggle("off", !live);
+      els.usbModeSel.disabled = !live;
+      els.usbAutoPorts.disabled = !live;
+      if (orbaCtx.usbMode === 0 || orbaCtx.usbMode === 1) els.usbModeSel.value = String(orbaCtx.usbMode);
+      els.routeSection.classList.toggle("off", !usbRoutingLive());   // BT is single-part: routing config does nothing
     }
 
+    let pendingPart = null, pendingUntil = 0;   // after a tap, trust the new part; ignore stale poll reads until the device confirms it
     function selectPart(part) {
       state.part = part;
+      pendingPart = part; pendingUntil = Date.now() + 1200;
       populateInstruments(PARTS[part].key);
       render();
       if (orbaReady()) { sendPayload(orba.setActivePart(part), "set part"); readPartFx(part); }
     }
     function applyActivePart(part) {
       // device told us the active part; reflect without echoing a SET back
+      if (pendingPart !== null) {                      // a recent tap is awaiting confirmation
+        if (part === pendingPart) pendingPart = null;  // device confirmed → resume trusting the poll
+        else if (Date.now() < pendingUntil) return;    // stale read of the OLD part → ignore, no flash
+        else pendingPart = null;                        // confirm timed out → accept device truth
+      }
       if (part === state.part) return;   // unchanged (the active-part poll hits this most ticks) → no redundant work
       state.part = part;
       populateInstruments(PARTS[part].key);
