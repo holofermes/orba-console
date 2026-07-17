@@ -38,15 +38,19 @@
     }
     .app {
       height: 100dvh;
+      min-width: 340px;   /* below this the page scrolls horizontally instead of crushing the grid */
       max-width: 560px;
       margin: 0 auto;
       padding: calc(env(safe-area-inset-top) + 8px) 10px calc(env(safe-area-inset-bottom) + 8px);
       display: flex;
       flex-direction: column;
       gap: 8px;
-      overflow-y: auto;   /* this app outgrew one screen, so scroll, never clip */
-      overflow-x: hidden;
+      position: relative;
+      overflow: hidden;   /* the middle scrolls; header, ghost strips, footer stay put */
     }
+    #scrollmain { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+    .appfoot { flex: 0 0 auto; }
+    @media (min-height: 1000px) { #scrollmain { flex: 0 1 auto; } }   /* tall window: footer hugs the content instead of the screen edge */
     /* touch: long-press is a GESTURE here (solo, clear, metronome), never text selection */
     button, select, canvas, .lane, .part, .pill, .keychip, .seqbar, h1, .lab, .k, .v {
       -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
@@ -55,30 +59,20 @@
     input, textarea { -webkit-user-select: text; user-select: text; }
 
     /* top bar */
+    /* top bar — a 4-column grid aligned with the parts grid below: brand | key/scale | songs+settings | connect */
     .bar { display: grid; grid-template-columns: repeat(4, 1fr); align-items: center; gap: 6px; }
     .bar > * { min-width: 0; }
     .brand { display: flex; align-items: center; gap: 7px; min-width: 0; grid-column: 1; }
     .brand .logo { width: 26px; height: 26px; flex: 0 0 auto; border-radius: 6px; }
     .bar h1 { margin: 0; font-size: 13px; font-weight: 600; line-height: 1.05; letter-spacing: .1px; white-space: normal; min-width: 0; }
     .barpair.conncol { grid-column: 2; }
-    .conncol .connect { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .conncol .keychip { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-    .connect.iconish { flex: 0 0 auto; padding: 0 10px; font-weight: 400; }   /* ⏏ (disconnect) is compact so the key chip fits beside it */
-    .connsheet .connpick { min-height: 54px; font-size: 15px; font-weight: 600; }
-    .barpair { display: flex; gap: 6px; align-items: center; min-width: 0; }
     .barpair.tools { grid-column: 3; }
     .barpair.conn { grid-column: 4; }
-    .barpair .iconbtn { min-width: 0; padding: 0; flex: 1 1 0; }
-    .barpair.conn .iconbtn { flex: 0 0 auto; min-width: 40px; }
-    .barpair.conn #status { flex: 1 1 0; }
-    .pill {
-      display: inline-flex; align-items: center; justify-content: center; gap: 5px;
-      font-size: 12px; color: var(--muted);
-      border: 1px solid var(--line); border-radius: 10px; padding: 0 6px; min-height: 46px; background: var(--panel);
-      overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
-    }
-    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); flex: 0 0 auto; }
-    .connected .dot { background: var(--ok); }
+    .conn .connect { width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }   /* fills one part cell */
+    .conncol .keychip { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+    .connsheet .connpick { min-height: 54px; font-size: 15px; font-weight: 600; }
+    .barpair { display: flex; gap: 6px; align-items: center; min-width: 0; }
+    .barpair .iconbtn { flex: 1 1 0; min-width: 0; }   /* the two icons split one part cell → half each */
 
     button, select {
       font: inherit; color: var(--text);
@@ -180,14 +174,14 @@
     #noteEdCanvas { width: 100%; flex: 1 1 auto; min-height: 0; height: auto; display: block; background: #0c0e12; border-radius: 8px; touch-action: none; margin-top: 8px; }
     .noteed-foot { font-size: 11px; color: var(--muted); margin-top: 6px; }
     .devrow .nm { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #usbModeRow.off, #usbAutoRow.off, #routeSection.off { opacity: .4; pointer-events: none; }   /* USB-only: greyed + inert on BT */
+    .usbauto { display: flex; align-items: center; justify-content: flex-end; }
     .liblist { display: grid; gap: 4px; max-height: 26dvh; overflow-y: auto; }
     .liblist .librow { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 4px; }
     .liblist .librow button { min-height: 40px; font-size: 13px; text-align: left; padding: 0 12px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .liblist .librow .delx { min-width: 40px; text-align: center; color: var(--muted); }
     .liblist .librow .delx.confirm { color: var(--danger); border-color: var(--danger); }
     .liblist .none { font-size: 12px; color: var(--muted); padding: 2px 6px; }
-    .dump { font: 10.5px ui-monospace, Menlo, monospace; color: var(--muted); white-space: pre-wrap; word-break: break-all; margin: 0; padding: 0 4px; min-height: 0; }
-    .dump:empty { display: none; }
 
     .field { display: grid; gap: 3px; }
     .field > .lab { font-size: 11px; color: var(--muted); padding-left: 2px; text-transform: uppercase; letter-spacing: .5px; }
@@ -247,11 +241,10 @@
       min-width: 0; position: relative;
     }
     /* live-play indicator: pulses while that part is receiving notes (Orba active voice or mapped controller) */
-    .livedot { position: absolute; top: 6px; right: 7px; width: 7px; height: 7px; border-radius: 50%;
-      background: var(--accent-2); opacity: 0; transition: opacity .25s ease; pointer-events: none; }
-    .livedot.live { opacity: 1; animation: livepulse .6s ease-in-out infinite; }
-    @keyframes livepulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.6); } }
     .lane .st { font-size: 10px; }
+    .lane .st:empty { display: none; }
+    .lanetitle { transition: color .12s ease; }
+    .lanetitle.lit { color: var(--accent-2); }   /* lights up while notes land on this part */
     .lanehead { display: flex; align-items: center; gap: 6px; width: 100%; padding: 1px 4px 0; }
     .lanehead .lanetitle { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; align-items: center; line-height: 1.05; }
     .lane .x.mini { min-height: 30px; padding: 0 9px; font-size: 10px; flex: 0 0 auto; }
@@ -278,6 +271,7 @@
 
     /* live note preview strips (one per MIDI source) */
     .viz { display: grid; gap: 4px; }
+    .viz:empty { display: none; }
     .grouplabel { display: flex; align-items: center; gap: 8px; font-size: 10px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); margin: 7px 2px 1px; }
     .grouplabel::after { content: ""; flex: 1 1 auto; height: 1px; background: var(--line); }
     .vizrow { display: grid; grid-template-columns: 76px 1fr; gap: 8px; align-items: center; }
@@ -294,13 +288,17 @@
     .msg { font-size: 11px; color: var(--muted); font-family: ui-monospace, Menlo, monospace;
       white-space: normal; min-height: 14px; padding: 0 2px; }
 
-    .appfoot { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 10px; padding: 10px 0 4px; }
+    .appfoot { display: flex; align-items: center; justify-content: center; gap: 20px; font-size: 10px; padding: 12px 0 2px; }
     .appfoot a { color: var(--muted); text-decoration: none; opacity: .7; }
     .appfoot a:hover { color: var(--accent); opacity: 1; }
-    .helpdot { width: 19px; height: 19px; min-height: 0; min-width: 0; padding: 0; border-radius: 50%;
+    .appfoot .ghlink { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; }
+    .helpdot { width: 30px; height: 30px; min-height: 0; min-width: 0; padding: 0; border-radius: 50%;
       border: 1px solid var(--line); background: var(--panel-2); color: var(--muted);
-      font-size: 11px; font-weight: 700; line-height: 1; display: inline-flex; align-items: center; justify-content: center; }
+      font-size: 15px; font-weight: 700; line-height: 1; display: inline-flex; align-items: center; justify-content: center; }
     .helpdot:hover { color: var(--accent); border-color: var(--accent); }
+    .devrow .dv { justify-self: end; align-self: center; font-size: 13px; color: var(--text); }
+    .changelog { margin: 4px 0 0; padding-left: 18px; font-size: 12px; color: var(--muted); line-height: 1.5; }
+    .changelog .cldate { color: var(--muted); opacity: .6; margin-right: 6px; font-variant-numeric: tabular-nums; }
     .helpgrid { display: grid; gap: 1px; }
     .helpsec { margin: 9px 0 2px; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; }
     .helpsec:first-child { margin-top: 0; }
@@ -316,7 +314,6 @@
     <div class="bar">
       <div class="brand"><img src="icon.svg" class="logo" alt=""><h1>Orba Console</h1></div>
       <div class="barpair conncol">
-        <button id="connectBtn" class="connect">Connect</button>
         <button id="keyChip" class="keychip" title="Key & scale">—</button>
       </div>
       <div class="barpair tools">
@@ -324,11 +321,11 @@
         <button id="cfgBtn" class="iconbtn" title="Mappings & routing" aria-label="Settings">⚙</button>
       </div>
       <div class="barpair conn">
-        <button id="midiBtn" class="iconbtn" title="MIDI keyboard → Orba" aria-label="MIDI keyboard input">🎹</button>
-        <span class="pill" id="status"><span class="dot"></span><span id="statusText">Off</span></span>
+        <button id="connectBtn" class="connect">Connect</button>
       </div>
     </div>
 
+    <div id="scrollmain">
     <div class="grouplabel">Orba</div>
     <div class="parts" id="parts">
       <button class="part" data-part="3" disabled><span class="nm">Drum</span><span class="inst" data-inst="drum">—</span></button>
@@ -366,7 +363,7 @@
     <div class="seq">
       <div class="seqbar">
         <button id="seqPlay" class="play" title="play / stop">▶</button>
-        <button id="seqRec" class="rec" title="record into the active part (hold = clear it)">⏺</button>
+        <button id="seqRec" class="rec" title="record into the active part">⏺</button>
         <div class="seqclock"><div class="bpm" id="seqBpm">120</div><div class="pos" id="seqPos">—</div></div>
         <select id="seqLen" title="loop length (beats)">
           <option value="auto" selected>auto</option>
@@ -378,10 +375,10 @@
       <div class="lanes" id="seqLanes"></div>
     </div>
 
-    <div class="viz" id="noteViz"></div>
-
     <div class="msg" id="msg">Plug in an Orba, or tap Connect.</div>
-    <footer class="appfoot"><button id="helpBtn" class="helpdot" title="Keyboard & gesture shortcuts" aria-label="Shortcuts">?</button><a class="ghlink" href="https://github.com/holofermes/orba-console" target="_blank" rel="noopener" title="Source on GitHub" aria-label="Source on GitHub"><svg viewBox="0 0 16 16" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></a></footer>
+    <div class="viz" id="noteViz"></div>
+    </div>
+    <footer class="appfoot"><button id="helpBtn" class="helpdot" title="Keyboard & gesture shortcuts" aria-label="Shortcuts">?</button><a class="ghlink" href="https://github.com/holofermes/orba-console" target="_blank" rel="noopener" title="Source on GitHub" aria-label="Source on GitHub"><svg viewBox="0 0 16 16" width="24" height="24" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></a></footer>
   </div>
 
   <div class="overlay" id="connOverlay">
@@ -458,8 +455,10 @@
           <option value="0">Off</option><option value="12">12 st</option>
           <option value="24">24 st</option><option value="48">48 st</option>
         </select></div>
-      <button class="learn" id="readFilesBtn">Read device files</button>
-      <pre id="deviceFilesDump" class="dump"></pre>
+      <div class="devrow" id="usbModeRow"><span class="nm">USB ports</span>
+        <select id="usbModeSel"><option value="0">4 separate</option><option value="1">merged</option></select></div>
+      <div class="devrow" id="usbAutoRow"><span class="nm">Auto-set 4 ports on connect</span>
+        <label class="usbauto"><input type="checkbox" id="usbAutoPorts"></label></div>
       <button class="learn" id="cfgClose">Done</button>
     </div>
   </div>
@@ -499,8 +498,14 @@
 
   <div class="overlay" id="helpOverlay">
     <div class="sheet">
-      <h2>Shortcuts</h2>
-      <div class="helpgrid">
+      <details class="cfgmap" open>
+        <summary>Info</summary>
+        <div class="devrow"><span class="nm">Device</span><span class="dv" id="infoModel">—</span></div>
+        <div class="devrow"><span class="nm">Battery</span><span class="dv" id="infoBattery">—</span></div>
+      </details>
+      <details class="cfgmap">
+        <summary>Shortcuts</summary>
+        <div class="helpgrid">
         <div class="helpsec">Transport</div>
         <div class="helprow"><kbd>Space</kbd><span>Play / pause the looper</span></div>
         <div class="helprow"><kbd>tap BPM</kbd><span>Type an exact tempo</span></div>
@@ -522,7 +527,15 @@
         <div class="helprow"><kbd>wheel</kbd><span>Zoom horizontally toward the cursor</span></div>
         <div class="helprow"><kbd>shift + wheel</kbd><span>Zoom rows vertically</span></div>
         <div class="helprow"><kbd>« / »</kbd><span>Move the loop window one bar</span></div>
-      </div>
+        </div>
+      </details>
+      <details class="cfgmap">
+        <summary>Changelog</summary>
+        <ul class="changelog">
+          <li><span class="cldate">2026-07</span> Orba 1 support over USB and Bluetooth</li>
+          <li><span class="cldate">2026-06</span> First release: Orba 2 control, looper, MIDI keyboard routing</li>
+        </ul>
+      </details>
       <button class="learn" id="helpClose">Done</button>
     </div>
   </div>
@@ -925,6 +938,7 @@
         return;
       }
       if (domain === 0x03 && addr === 0x000e && payload.length >= 5) { orbaCtx.pbRange = payload[4]; return; }
+      if (domain === 0x03 && addr === 0x000f && payload.length >= 5) { orbaCtx.battery = payload[4]; renderDeviceInfo(); return; }   // battery % (info panel)
       // USB port layout (01 01 00 15 <mode>): 0 = four per-voice ports (external MIDI routes to parts), 1 = one merged port
       if (domain === 0x01 && addr === 0x0015 && payload.length >= 5) {
         orbaCtx.usbMode = payload[4];
@@ -978,7 +992,7 @@
     const ROOTS  = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
     const SCALES = ["Major", "Nat Minor", "Harm Minor", "Mel Minor", "Maj Penta", "Min Penta",
                     "Dorian", "Phrygian", "Lydian", "Mixolydian", "Locrian"];
-    const orbaCtx = { root: null, scale: null, midiMode: null, pbRange: null };
+    const orbaCtx = { root: null, scale: null, midiMode: null, pbRange: null, usbMode: null, battery: null };
     // 7-note interval sets (Orba 2 scale enum order); pentatonic scales are 5-note.
     const SCALE_IVALS = [
       [0,2,4,5,7,9,11],   // Major
@@ -1207,10 +1221,24 @@
       if (wasSilent) setTimeout(() => repairSilencedPart(partIdx, stashKind), 1100);           // keep staged sounds silent
     }
 
+    async function loadSongGen1(song) {   // gen-1 has no filename-select: apply each part's patch directly (instruments only, no loops/tempo)
+      const refs = song.presets || {};
+      for (const key of ["drum", "bass", "chord", "lead"]) {
+        const ref = refs[key];
+        if (!ref || !ref.filename) continue;
+        state.partFile[key] = ref.filename;
+        if (ref.name) { state.partName[key] = ref.name; const inst = document.querySelector(`[data-inst="${key}"]`); if (inst) inst.textContent = ref.name; }
+        await applyGen1Patch(key, ref.filename);
+        await sleep(60);
+      }
+      populateInstruments(PARTS[state.part].key);   // reflect the active part's new instrument in the dropdown
+      render();
+    }
     async function loadSong(filename) {
       const song = state.library?.songs.find(s => s.filename === filename);
       if (!song) return;
       msg(`Song: ${song.name}`);
+      if (state.gen1) return loadSongGen1(song);   // gen-1: patches only (filename-select is rejected by the device)
       await sendSelector("song", filename);
       await sleep(110);
       const refs = song.presets || {};
@@ -1805,13 +1833,6 @@
       renderSeq(); renderKb16();
       return true;
     }
-    function seqRecHold() {                      // hold = clear the ACTIVE part's loop
-      for (const ev of seqEngine.clearPart(state.part)) sendPartMidi(ev.part, ev.bytes);
-      msg(`${PARTS[state.part].name} loop cleared`);
-      persistLoops();
-      renderSeq(); renderKb16();
-    }
-
     /* tap tempo + click toggle (the metronome key / 🔔 button) */
     let taps = [];
     const fmtBpm = () => Number.isInteger(seqClock.bpm) ? String(seqClock.bpm) : seqClock.bpm.toFixed(1);
@@ -1884,13 +1905,13 @@
     }
 
     const seqGrids = [];
-    const seqDots = [], dotTimers = [null, null, null, null], partLive = [false, false, false, false];
-    function flashPart(pi) {                       // a note landed on part pi → pulse its lane dot until the notes stop
+    const seqTitles = [], dotTimers = [null, null, null, null], partLive = [false, false, false, false];
+    function flashPart(pi) {                       // a note landed on part pi → light its lane title until the notes stop
       if (pi == null || pi < 0 || pi > 3) return;
       partLive[pi] = true;
-      const d = seqDots[pi]; if (d) d.classList.add("live");
+      const t = seqTitles[pi]; if (t) t.classList.add("lit");
       clearTimeout(dotTimers[pi]);
-      dotTimers[pi] = setTimeout(() => { partLive[pi] = false; const dd = seqDots[pi]; if (dd) dd.classList.remove("live"); }, 200);
+      dotTimers[pi] = setTimeout(() => { partLive[pi] = false; const tt = seqTitles[pi]; if (tt) tt.classList.remove("lit"); }, 200);
     }
     function updateSeqGrids(beatNow) {
       const active = seqClock.running && beatNow >= 0;
@@ -1923,16 +1944,13 @@
       for (const pi of [3, 2, 1, 0]) {            // visual order: Drum, Bass, Chord, Lead (logical indices unchanged)
         const lane = document.createElement("div");
         lane.className = "lane";
-        const livedot = document.createElement("span");           // live-play indicator (pulses on incoming notes)
-        livedot.className = "livedot" + (partLive[pi] ? " live" : "");
-        lane.append(livedot); seqDots[pi] = livedot;
         lane.classList.toggle("has", seqEngine.hasContent(pi));
         const armable = seqEngine.recEnabled[pi];
         lane.classList.toggle("recing", (seqEngine.recording || seqEngine.armed || seqEngine.preroll) && armable);
         const st = seqEngine.preroll && armable ? "play to rec"
                  : seqEngine.armed && armable ? "armed"
                  : seqEngine.recording && armable ? "REC"
-                 : seqEngine.hasContent(pi) ? "●" : "○";
+                 : "";
         const head = document.createElement("div");
         head.className = "lanehead";
         const solo = document.createElement("button");
@@ -1942,8 +1960,9 @@
         solo.title = "solo this part";
         solo.addEventListener("click", () => soloToggle(pi));
         const title = document.createElement("span");
-        title.className = "lanetitle";
+        title.className = "lanetitle" + (partLive[pi] ? " lit" : "");
         title.innerHTML = `<span>${PARTS[pi].name}</span><span class="st">${st}</span>`;
+        seqTitles[pi] = title;
         const mute = document.createElement("button");
         mute.className = "x mute mini"; mute.textContent = "mute";
         mute.classList.toggle("on", muteStash[PARTS[pi].key] != null);
@@ -2227,7 +2246,7 @@
       scalePrev:       () => stepScale(-1),
     };
     // actions where HOLDING the key means something different from tapping it
-    const HOLD_ACTIONS = { seqRecToggle: seqRecHold, seqMetronome: seqMetHold };
+    const HOLD_ACTIONS = { seqMetronome: seqMetHold };
     const HOLD_MS = 550;
     /* ---- user-editable key mappings (⚙ panel, learn mode) ----
        Entry: { action, led?, color? }; led/color drive the DOIO feedback for
@@ -2385,15 +2404,17 @@
     }
 
     // (Re)scan MIDI ports: find the Orba's USB ports, wire every other input to forward.
-    function scanMidi() {
+    function scanMidi(force) {   // force = an explicit Connect → Wired; otherwise honor auto-connect + soft-eject
       if (!midiAccess) return;
       // Android lists a PAIRED BLE Orba ("Artiphon Orba 2") next to the live USB
       // one ("… USB"); prefer USB ports or commands vanish into the idle pairing.
       const allOuts = Array.from(midiAccess.outputs.values()).filter(isOrbaPort);
+      if (!allOuts.length) usbSoftOff = false;                                    // Orba unplugged → clear soft-eject so a replug reconnects
+      const mayAttach = force || !!usbOut || (autoConnect && !usbSoftOff);        // keep a live link; else auto-attach only when auto-connect is on
       const usbOutsOnly = allOuts.filter(p => /usb/i.test(p.name || ""));
-      const outs = usbOutsOnly.length ? usbOutsOnly : allOuts;                   // 4 ports = 4 parts over USB
+      const outs = mayAttach ? (usbOutsOnly.length ? usbOutsOnly : allOuts) : [];   // 4 ports = 4 parts over USB
       const allIns = Array.from(midiAccess.inputs.values()).filter(isOrbaPort);
-      const inp = allIns.find(p => /usb/i.test(p.name || "")) || allIns[0] || null;
+      const inp = mayAttach ? (allIns.find(p => /usb/i.test(p.name || "")) || allIns[0] || null) : null;
       const kb16 = Array.from(midiAccess.outputs.values()).find(isKb16Port) || null;
       // ANY hot-plug event invalidates the LED diff cache: the browser reuses
       // port objects across replugs, but the board powers up dark.
@@ -2422,13 +2443,13 @@
     }
 
     async function initMidi() {
-      if (!navigator.requestMIDIAccess) { els.midiBtn.disabled = true; els.midiBtn.title = "Web MIDI not supported here"; return; }
+      if (!navigator.requestMIDIAccess) { msg("Web MIDI not supported here"); return; }
       try { midiAccess = await navigator.requestMIDIAccess({ sysex: true }); }   // sysex needed for control over USB
       catch (e) {
         try { midiAccess = await navigator.requestMIDIAccess({ sysex: false }); msg("MIDI: notes only. Allow MIDI access for full control."); }
         catch (e2) { msg("Web MIDI blocked: " + (e2.message || e2)); return; }
       }
-      midiAccess.onstatechange = scanMidi;   // hot-plug: re-scan on any connect/disconnect
+      midiAccess.onstatechange = () => scanMidi();   // hot-plug: re-scan (no force, so auto-connect pref is honored)
       scanMidi();
     }
 
@@ -2472,17 +2493,40 @@
     function openConnChooser() { $("#autoConnBox").checked = autoConnect; connOverlay.classList.add("open"); }
     function disconnectActive() {
       if (usbDevice) { disconnectGen1(); return; }                        // gen-1 CDC
-      if (state.char) { try { state.device.gatt.disconnect(); } catch (e) {} return; }   // BLE drops via gattserverdisconnected
-      if (usbOut) { msg("Unplug the USB cable to disconnect."); return; } // gen-2 USB-MIDI has no soft disconnect
+      if (state.char) { teardownBle(true); refreshGen1(); updateConnUI(); msg("Bluetooth disconnected."); return; }   // full teardown; don't depend on the gattserverdisconnected event firing
+      if (usbOut) {                                     // a USB-MIDI port can't be unbound by the browser; soft-drop it and stop auto-reattaching
+        if (usbIn) usbIn.onmidimessage = null; usbIn = null; usbOut = null; usbOuts = [];
+        usbSoftOff = true;
+        updateConnUI();
+        msg("Disconnected. Tap Connect to reconnect.");
+        return;
+      }
     }
     els.connectBtn.addEventListener("click", () => orbaReady() ? disconnectActive() : openConnChooser());
-    function pickWired() {                                                // wired = gen-1 CDC. Call requestDevice() straight from the tap —
-      connOverlay.classList.remove("open");                              // an await first can drop the user gesture and the grant silently fails.
-      connectSerial();                                                   // prompts once; load-time getDevices() auto-reconnects a granted device after.
+    function pickWired() {                                                // wired: re-attach a USB-MIDI Orba, else prompt for a gen-1 CDC device.
+      connOverlay.classList.remove("open");
+      usbSoftOff = false; scanMidi(true);                               // force-attach a gen-2 USB (incl. one we soft-ejected), ignoring auto-connect pref
+      if (!orbaReady()) connectSerial();                                 // gen-1 CDC: requestDevice() straight from the tap (no await first, or the grant drops)
     }
     $("#pickWired").addEventListener("click", pickWired);
     $("#pickBle").addEventListener("click", () => { connOverlay.classList.remove("open"); connectBle(); });
+    if (!navigator.bluetooth) { const b = $("#pickBle"); b.disabled = true; b.title = "Bluetooth not supported in this browser"; }
     $("#autoConnBox").addEventListener("change", e => { autoConnect = e.target.checked; localStorage.setItem("orbaAutoConnect", autoConnect ? "1" : "0"); });
+    els.usbAutoPorts.checked = autoPorts;
+    els.usbAutoPorts.addEventListener("change", e => {
+      autoPorts = e.target.checked;
+      localStorage.setItem("orbaAutoPorts", autoPorts ? "1" : "0");
+      if (autoPorts && orbaCtx.usbMode !== 0 && usbControlLive()) {   // apply immediately when switched on
+        sendPayload(orba.setUsbMode(0), "auto 4 ports"); orbaCtx.usbMode = 0; msg("Orba set to 4 separate USB ports"); updateUsbModeUI();
+      }
+    });
+    els.usbModeSel.addEventListener("change", e => {                  // manual set
+      const m = Number(e.target.value) & 1;
+      sendPayload(orba.setUsbMode(m), "set usb mode");
+      orbaCtx.usbMode = m;
+      if (m === 1 && autoPorts) { autoPorts = false; els.usbAutoPorts.checked = false; localStorage.setItem("orbaAutoPorts", "0"); }   // merged overrides auto-set
+      msg(m === 0 ? "Orba: 4 separate USB ports" : "Orba: 1 merged USB port");
+    });
     connOverlay.addEventListener("click", e => { if (e.target === connOverlay) connOverlay.classList.remove("open"); });
     document.querySelectorAll("input[data-fx]").forEach(s => {   // dragging a slider sends the FX (was macropad-only)
       s.addEventListener("input", () => {
@@ -2500,12 +2544,6 @@
       navigator.usb.addEventListener("disconnect", e => { if (e.device === usbDevice) closeSerial(); });
     }
     updateConnUI();                                            // reflect WebUSB availability on load
-    els.midiBtn.addEventListener("click", () => {           // 🎹 = mute/unmute keyboard forwarding
-      fwdMute = !fwdMute;
-      if (fwdMute) { for (const [n, c] of fwdNotes) sendToOrba([0x80 | c, n, 0]); fwdNotes.clear(); }  // release held notes
-      updateConnUI();
-      msg(fwdMute ? "Keyboard muted" : "Keyboard forwarding on");
-    });
     // tap = select part · long-press (550ms) = solo/un-solo that part
     let pressTimer = null, longFired = false;
     els.parts.addEventListener("pointerdown", e => {
@@ -2795,40 +2833,6 @@
     /* on-demand device inventory: read the loaded filenames + loop CRCs.
        PRINT ONLY, deliberately updates nothing (registers 0x26-0x2a are the
        selector registers read back; 0x14 = per-part loop CRC table). */
-    $("#readFilesBtn").addEventListener("click", async () => {
-      const out = $("#deviceFilesDump");
-      if (!orbaReady()) { out.textContent = "no Orba connected"; return; }
-      out.textContent = "querying…";
-      const got = {};
-      const orig = onMidiBytes;
-      onMidiBytes = data => {
-        if (data[0] === 0xf0) {
-          const d = decodeMessage(data);
-          if (d?.crcOk && d.payload[1] === 0x03) {
-            const a = (d.payload[2] << 8) | d.payload[3];
-            if (a >= 0x26 && a <= 0x2a) got[a] = ascii(d.payload.slice(4));
-            if (a === 0x14) got[0x14] = Array.from(d.payload.slice(4, 20));
-          }
-        }
-        orig(data);
-      };
-      const labels = { 0x26: "drum ", 0x27: "bass ", 0x28: "chord", 0x29: "lead ", 0x2a: "song " };
-      for (const kind of Object.keys(SELECT_ADDRS)) { sendPayload(orba.getSelectedFile(kind), "read file"); await sleep(160); }
-      sendPayload(orba.getLooperCrcs(), "loop crcs");
-      await sleep(900);
-      onMidiBytes = orig;
-      const lines = [0x26, 0x27, 0x28, 0x29, 0x2a].map(a => `${labels[a]} ${got[a] ?? "(no reply)"}`);
-      if (got[0x14]) {
-        const crcs = [];
-        for (let i = 0; i < 16; i += 4) {
-          const c = got[0x14].slice(i, i + 4).map(b => b.toString(16).padStart(2, "0")).join("");
-          crcs.push(c === "ffffffff" ? "—" : c);
-        }
-        lines.push(`loops [${crcs.join(" · ")}]  (— = empty slot)`);
-      } else lines.push("loops (no reply)");
-      out.textContent = lines.join("\n");
-    });
-
     $("#cfgBtn").addEventListener("click", () => {
       renderMapList(); renderDevList(); refreshMapPresetList();
       if (orbaCtx.midiMode != null) $("#orbaMidiMode").value = String(orbaCtx.midiMode);
@@ -2845,7 +2849,15 @@
     $("#libClose").addEventListener("click", () => $("#libOverlay").classList.remove("open"));
 
     /* ---- ? shortcuts cheat-sheet ---- */
-    $("#helpBtn").addEventListener("click", () => $("#helpOverlay").classList.add("open"));
+    function renderDeviceInfo() {
+      $("#infoModel").textContent = !orbaReady() ? "Not connected" : (state.gen1 ? "Orba 1" : "Orba 2");
+      $("#infoBattery").textContent = orbaCtx.battery == null ? "—" : orbaCtx.battery + "%";
+    }
+    $("#helpBtn").addEventListener("click", () => {
+      $("#helpOverlay").classList.add("open");
+      renderDeviceInfo();
+      if (orbaReady()) sendPayload(orba.getBatteryPercent(), "get battery");
+    });
     $("#helpClose").addEventListener("click", () => $("#helpOverlay").classList.remove("open"));
     $("#helpOverlay").addEventListener("click", e => { if (e.target.id === "helpOverlay") $("#helpOverlay").classList.remove("open"); });
     $("#libOverlay").addEventListener("click", e => { if (e.target === $("#libOverlay")) $("#libOverlay").classList.remove("open"); });
@@ -3196,7 +3208,7 @@
     Object.assign(window, {
       orba, state, PARTS, sendPayload, sendToOrba, readDeviceState, render, selectPart, transport, setFxFor, forwardMidi,
       // looper / sequencer (module consts aren't global; expose for live debugging)
-      seqEngine, seqClock, seqStart, seqStop, seqPlayStop, seqRecTap, seqRecHold, seqTapTempo, setBpm, renderSeq, openNoteEd, noteEd,
+      seqEngine, seqClock, seqStart, seqStop, seqPlayStop, seqRecTap, seqTapTempo, setBpm, renderSeq, openNoteEd, noteEd,
     });
 
     // boot
