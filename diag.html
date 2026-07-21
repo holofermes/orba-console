@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Orba Console Diagnostics</title>
+<style>
+  :root {
+    --bg: #0f1216; --panel: #161b22; --panel-2: #1c222b; --line: #353d46;
+    --text: #e6edf3; --muted: #9aa6b2; --ok: #35c2a1; --bad: #e5534b; --warn: #e9b44c;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0 auto; background: var(--bg); color: var(--text);
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    padding: 16px; max-width: 820px; }
+  h1 { font-size: 18px; margin: 0 0 14px; }
+  h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted);
+    margin: 22px 0 8px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+  .row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: start;
+    padding: 8px 0; border-bottom: 1px solid rgba(53,61,70,.5); }
+  .row .k { font-weight: 600; }
+  .row .d { color: var(--muted); font-size: 12px; word-break: break-word; }
+  .pill { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px; white-space: nowrap;
+    border: 1px solid var(--line); background: var(--panel-2); color: var(--muted); }
+  .pill.ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 55%, var(--line)); }
+  .pill.bad { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 55%, var(--line)); }
+  .pill.warn { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 55%, var(--line)); }
+  button { font: inherit; font-weight: 600; color: var(--text); background: var(--panel-2);
+    border: 1px solid var(--line); border-radius: 9px; padding: 10px 14px; cursor: pointer; margin: 6px 6px 0 0; }
+  button:not(:disabled):hover { border-color: var(--ok); }
+  button:disabled { opacity: .45; cursor: not-allowed; color: var(--muted);
+    background: transparent; border-style: dashed; border-color: var(--line); }
+  pre { background: #0b0e12; border: 1px solid var(--line); border-radius: 9px; padding: 10px;
+    font-size: 11.5px; line-height: 1.4; max-height: 260px; overflow: auto; white-space: pre-wrap; word-break: break-word; }
+  textarea { width: 100%; height: 220px; background: #0b0e12; color: var(--text);
+    border: 1px solid var(--line); border-radius: 9px; padding: 10px; font: 11.5px ui-monospace, Menlo, monospace; }
+</style>
+</head>
+<body>
+
+<h1>Orba Console Diagnostics</h1>
+
+<h2>Environment</h2>
+<div id="env"></div>
+
+<h2>Capabilities</h2>
+<div id="caps"></div>
+
+<h2>MIDI</h2>
+<button id="midiBtn">Request MIDI access</button>
+<div id="midiRes"></div>
+<pre id="midiLog">(empty)</pre>
+
+<h2>Bluetooth</h2>
+<button id="btBtn">Scan for Orba</button>
+<button id="btAllBtn">Scan all devices</button>
+<div id="btRes"></div>
+<pre id="btLog">(empty)</pre>
+
+<h2>USB</h2>
+<button id="usbBtn">Request Orba USB device</button>
+<button id="usbAllBtn">Show all USB devices</button>
+<div id="usbRes"></div>
+<pre id="usbLog">(empty)</pre>
+
+<h2>Report</h2>
+<button id="copyBtn">Copy report</button>
+<span id="copyNote" style="color:var(--muted);font-size:12px"></span>
+<textarea id="report" readonly></textarea>
+
+<script>
+"use strict";
+
+const BLE_MIDI_SERVICE_UUID = "03b80e5a-ede8-4b33-a751-6ce34ec4c700";
+const BLE_MIDI_CHARACTERISTIC_UUID = "7772e5db-3868-4112-a1a9-f2669d106bf3";
+const ORBA1_USB = { vendorId: 0x0000, productId: 0x5740 };
+const ORBA2_USB = { vendorId: 0x34b0, productId: 0x0202 };
+
+const results = {};
+const $ = s => document.querySelector(s);
+const hex = n => "0x" + n.toString(16).padStart(4, "0");
+
+function addRow(host, key, status, detail) {
+  const row = document.createElement("div");
+  row.className = "row";
+  row.innerHTML = `<div><div class="k"></div><div class="d"></div></div><span class="pill"></span>`;
+  row.querySelector(".k").textContent = key;
+  row.querySelector(".d").textContent = detail || "";
+  const pill = row.querySelector(".pill");
+  if (!status.label) pill.remove();
+  else { pill.textContent = status.label; if (status.kind) pill.classList.add(status.kind); }
+  $(host).appendChild(row);
+  results[key] = [status.label, detail].filter(Boolean).join(" | ");
+  buildReport();
+}
+const OK = l => ({ label: l || "OK", kind: "ok" });
+const BAD = l => ({ label: l || "NO", kind: "bad" });
+const WARN = l => ({ label: l, kind: "warn" });
+const INFO = () => ({ label: "", kind: "" });
+
+function log(sel, msg) {
+  const el = $(sel);
+  if (el.dataset.started !== "1") { el.textContent = ""; el.dataset.started = "1"; }
+  el.textContent += msg + "\n";
+  el.scrollTop = el.scrollHeight;
+  buildReport();
+}
+
+/* Environment */
+addRow("#env", "User agent", INFO(), navigator.userAgent);
+addRow("#env", "Platform", INFO(), (navigator.platform || "?") + " | cores " + (navigator.hardwareConcurrency || "?") +
+  " | touch " + (navigator.maxTouchPoints || 0));
+addRow("#env", "Page URL", INFO(), location.href);
+addRow("#env", "Secure context", isSecureContext ? OK("YES") : BAD("NO"), "");
+
+/* Capabilities */
+const hasMIDI = typeof navigator.requestMIDIAccess === "function";
+const hasBT   = !!navigator.bluetooth;
+const hasUSB  = !!navigator.usb;
+
+addRow("#caps", "Web MIDI", hasMIDI ? OK("YES") : BAD("NO"), "");
+addRow("#caps", "Web Bluetooth", hasBT ? OK("YES") : BAD("NO"), "");
+addRow("#caps", "WebUSB", hasUSB ? OK("YES") : BAD("NO"), "");
+
+if (hasBT && navigator.bluetooth.getAvailability) {
+  navigator.bluetooth.getAvailability()
+    .then(av => addRow("#caps", "Bluetooth adapter", av ? OK("YES") : BAD("NO"), ""))
+    .catch(e => addRow("#caps", "Bluetooth adapter", WARN("ERROR"), String(e)));
+}
+
+if (!hasMIDI) $("#midiBtn").disabled = true;
+if (!hasBT) { $("#btBtn").disabled = true; $("#btAllBtn").disabled = true; }
+if (!hasUSB) { $("#usbBtn").disabled = true; $("#usbAllBtn").disabled = true; }
+
+/* MIDI */
+const describePort = p => [p.name || "(no name)", p.manufacturer || "", "state=" + p.state, "conn=" + p.connection]
+  .filter(Boolean).join(" | ");
+const isOrba  = p => /orba/i.test((p.name || "") + (p.manufacturer || ""));
+const isOrba2 = p => /orba\s*2/i.test((p.name || "") + (p.manufacturer || ""));
+
+$("#midiBtn").addEventListener("click", async () => {
+  $("#midiBtn").disabled = true;
+  let access = null, sysex = false;
+  try { access = await navigator.requestMIDIAccess({ sysex: true }); sysex = true; }
+  catch (e) {
+    log("#midiLog", "sysex request failed: " + e);
+    try { access = await navigator.requestMIDIAccess({ sysex: false }); }
+    catch (e2) { addRow("#midiRes", "MIDI access", BAD("DENIED"), String(e2)); return; }
+  }
+  addRow("#midiRes", "MIDI access", OK("GRANTED"), "sysex: " + (sysex ? "yes" : "no"));
+
+  const ins = [...access.inputs.values()], outs = [...access.outputs.values()];
+  addRow("#midiRes", "MIDI inputs", ins.length ? OK(String(ins.length)) : BAD("0"), ins.map(describePort).join("  //  "));
+  addRow("#midiRes", "MIDI outputs", outs.length ? OK(String(outs.length)) : BAD("0"), outs.map(describePort).join("  //  "));
+
+  const orbaPorts = [...ins, ...outs].filter(isOrba);
+  addRow("#midiRes", "Orba over MIDI",
+    orbaPorts.length ? OK(orbaPorts.some(isOrba2) ? "ORBA 2" : "ORBA 1") : BAD("NOT FOUND"),
+    orbaPorts.map(p => p.name).join(", "));
+
+  ins.forEach(i => { i.onmidimessage = e => {
+    const b = [...e.data].map(x => x.toString(16).padStart(2, "0")).join(" ");
+    log("#midiLog", `${(e.timeStamp / 1000).toFixed(2)}s ${i.name} [${b}] ${decode([...e.data])}`);
+  }; });
+  log("#midiLog", "listening on " + ins.length + " input(s)");
+  access.onstatechange = e => log("#midiLog", `${e.port.name} -> ${e.port.state}/${e.port.connection}`);
+});
+
+function decode(d) {
+  const t = d[0] & 0xf0, ch = (d[0] & 0x0f) + 1;
+  if (d[0] === 0xf0) return "sysex " + d.length + "B";
+  if (t === 0x90) return d[2] > 0 ? `note on ch${ch} n${d[1]} v${d[2]}` : `note off ch${ch} n${d[1]}`;
+  if (t === 0x80) return `note off ch${ch} n${d[1]}`;
+  if (t === 0xb0) return `cc ch${ch} #${d[1]}=${d[2]}`;
+  if (t === 0xe0) return `bend ch${ch}`;
+  if (t === 0xd0) return `aftertouch ch${ch}`;
+  return "";
+}
+
+/* Bluetooth */
+async function btTest(all) {
+  if (!hasBT) { addRow("#btRes", "Bluetooth", BAD("UNSUPPORTED"), ""); return; }
+  const opts = all
+    ? { acceptAllDevices: true, optionalServices: [BLE_MIDI_SERVICE_UUID] }
+    : { filters: [{ services: [BLE_MIDI_SERVICE_UUID] }, { namePrefix: "Orba" }, { namePrefix: "Artiphon" }],
+        optionalServices: [BLE_MIDI_SERVICE_UUID] };
+  let dev;
+  try { dev = await navigator.bluetooth.requestDevice(opts); }
+  catch (e) { addRow("#btRes", "Device", BAD("NONE"), String(e)); log("#btLog", "chooser: " + e); return; }
+  addRow("#btRes", "Device", OK(), `${dev.name || "(unnamed)"} | id=${dev.id}`);
+  log("#btLog", `device: ${dev.name || "(unnamed)"} id=${dev.id}`);
+
+  let server, service, ch;
+  try { server = await dev.gatt.connect(); addRow("#btRes", "GATT connect", OK(), ""); log("#btLog", "gatt connected"); }
+  catch (e) { addRow("#btRes", "GATT connect", BAD("FAILED"), String(e)); log("#btLog", "gatt: " + e); return; }
+  try { service = await server.getPrimaryService(BLE_MIDI_SERVICE_UUID); addRow("#btRes", "MIDI service", OK(), ""); log("#btLog", "service found"); }
+  catch (e) { addRow("#btRes", "MIDI service", BAD("FAILED"), String(e)); log("#btLog", "service: " + e); return; }
+  try { ch = await service.getCharacteristic(BLE_MIDI_CHARACTERISTIC_UUID); addRow("#btRes", "Characteristic", OK(), ""); log("#btLog", "characteristic found"); }
+  catch (e) { addRow("#btRes", "Characteristic", BAD("FAILED"), String(e)); log("#btLog", "characteristic: " + e); return; }
+  try {
+    await ch.startNotifications();
+    ch.addEventListener("characteristicvaluechanged", ev => {
+      const b = [...new Uint8Array(ev.target.value.buffer)].map(x => x.toString(16).padStart(2, "0")).join(" ");
+      log("#btLog", "[" + b + "]");
+    });
+    addRow("#btRes", "Notifications", OK(), "");
+    log("#btLog", "notifications started");
+  } catch (e) { addRow("#btRes", "Notifications", BAD("FAILED"), String(e)); log("#btLog", "notify: " + e); }
+}
+$("#btBtn").addEventListener("click", () => btTest(false));
+$("#btAllBtn").addEventListener("click", () => btTest(true));
+
+/* USB */
+(async () => {
+  if (!hasUSB) { addRow("#usbRes", "WebUSB", BAD("UNSUPPORTED"), ""); return; }
+  try {
+    const ds = await navigator.usb.getDevices();
+    addRow("#usbRes", "Granted devices", ds.length ? OK(String(ds.length)) : BAD("0"),
+      ds.map(d => `${d.productName || "(no name)"} ${hex(d.vendorId)}:${hex(d.productId)}`).join("  //  "));
+  } catch (e) { addRow("#usbRes", "Granted devices", WARN("ERROR"), String(e)); }
+})();
+
+async function usbTest(all) {
+  if (!hasUSB) { log("#usbLog", "webusb unsupported"); return; }
+  const key = all ? "Device (any)" : "Device (Orba filter)";
+  let d;
+  try { d = await navigator.usb.requestDevice(all ? { filters: [] } : { filters: [ORBA1_USB, ORBA2_USB] }); }
+  catch (e) { addRow("#usbRes", key, BAD("NONE"), String(e)); log("#usbLog", "chooser: " + e); return; }
+  if (!all) $("#usbBtn").disabled = true;
+  const id = `${d.productName || "(no name)"} | ${d.manufacturerName || "(no vendor)"} | ${hex(d.vendorId)}:${hex(d.productId)}`;
+  addRow("#usbRes", key, OK(), id);
+  log("#usbLog", "device: " + id);
+  try {
+    await d.open();
+    addRow("#usbRes", "Open " + (all ? "(any)" : "(filter)"), OK(), "configuration " + (d.configuration ? d.configuration.configurationValue : "none"));
+    log("#usbLog", "opened");
+    await d.close();
+  } catch (e) {
+    addRow("#usbRes", "Open " + (all ? "(any)" : "(filter)"), BAD("FAILED"), String(e));
+    log("#usbLog", "open: " + e);
+  }
+}
+$("#usbBtn").addEventListener("click", () => usbTest(false));
+$("#usbAllBtn").addEventListener("click", () => usbTest(true));
+
+/* Report */
+function buildReport() {
+  const lines = ["Orba Console diagnostics", new Date().toISOString(), ""];
+  for (const [k, v] of Object.entries(results)) lines.push(k + ": " + v);
+  for (const [title, sel] of [["MIDI", "#midiLog"], ["Bluetooth", "#btLog"], ["USB", "#usbLog"]]) {
+    const el = $(sel);
+    if (el && el.dataset.started === "1") lines.push("", "[" + title + "]", el.textContent.trim());
+  }
+  $("#report").value = lines.join("\n");
+}
+$("#copyBtn").addEventListener("click", async () => {
+  buildReport();
+  try { await navigator.clipboard.writeText($("#report").value); $("#copyNote").textContent = "copied"; }
+  catch (e) { $("#report").select(); $("#copyNote").textContent = "select and copy manually"; }
+});
+buildReport();
+
+(function trackPublishedUse() {
+  const expectedOrigin = "https://holofermes.github.io";
+  const expectedPathPrefix = "/orba-console/";
+  const isExpectedOrigin = location.origin === expectedOrigin;
+  const isExpectedPath = location.pathname === expectedPathPrefix ||
+    location.pathname === `${expectedPathPrefix}index.html` ||
+    location.pathname.startsWith(expectedPathPrefix);
+  if (!isExpectedOrigin || !isExpectedPath) return;
+
+  const params = new URLSearchParams();
+  params.set("site", "orba-console");
+  params.set("v", "1");
+  params.set("path", location.pathname);
+  if (location.search) params.set("search", location.search.slice(0, 500));
+  if (document.referrer) params.set("page_referrer", document.referrer.slice(0, 500));
+  params.set("t", Date.now().toString(36));
+
+  const pixel = new Image(1, 1);
+  pixel.decoding = "async";
+  pixel.referrerPolicy = "strict-origin-when-cross-origin";
+  pixel.src = `https://fabiopiparo.com/pixel.gif?${params.toString()}`;
+})();
+</script>
+</body>
+</html>
