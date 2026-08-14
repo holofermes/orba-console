@@ -716,9 +716,9 @@
       return false;
     }
     async function sendPayload(payload, label) {
-      if (usbDevice) { await sendSerial(payload); return; }   // gen-1: raw ArtiComm over WebUSB
-      if (gen1Present) {                                       // gen-1 link dropped: reconnect WebUSB, NEVER fall back to MIDI (it ignores control)
-        try { const d = (await navigator.usb.getDevices()).find(x => x.productId === 0x5740 && x.vendorId === 0x0000); if (d && !usbDevice) await openSerial(d); } catch (e) {}
+      if (usbDevice) { await sendSerial(payload); return; }   // gen-1: raw ArtiComm over Web Serial
+      if (gen1Present) {                                       // gen-1 link dropped: reconnect Web Serial, NEVER fall back to MIDI (it ignores control)
+        try { const d = (await navigator.serial.getPorts()).find(isGen1Port); if (d && !usbDevice) await openSerial(d); } catch (e) {}
         if (usbDevice) { await sendSerial(payload); return; }
         msg("Orba 1 USB reconnecting…"); return;
       }
@@ -733,16 +733,18 @@
     }
 
     /* -------------------------------------------------------------------
-       Orba 1 (gen-1) over WebUSB. Its CDC control interface has no kernel
-       serial driver, so we drive the bulk endpoints directly (same as the
-       reference Python) rather than Web Serial. Control is raw ArtiComm (no
-       SysEx); a preset is applied as ~99 audio-engine register writes
-       (domain 0x02, addr = partBase + offset), the same mechanism as the mix
-       FX. gen-1 rejects the gen-2 filename-select.
-       USB: VID 0x0000 / PID 0x5740, CDC interfaces 2 (control) + 3 (data),
-       bulk endpoint 1 (OUT 0x01 / IN 0x81).
+       Orba 1 (gen-1) over Web Serial. Its CDC control interface (2) gets
+       claimed by the OS's own USB-CDC driver on at least macOS (shows up as
+       /dev/cu.usbmodem*), so raw WebUSB claimInterface(2) fails there with
+       "Unable to claim interface" — Web Serial goes through that same OS
+       driver instead of fighting it for the interface. Control is raw
+       ArtiComm (no SysEx); a preset is applied as ~99 audio-engine register
+       writes (domain 0x02, addr = partBase + offset), the same mechanism as
+       the mix FX. gen-1 rejects the gen-2 filename-select.
+       USB: VID 0x0000 / PID 0x5740, 115200 8N1.
     ------------------------------------------------------------------- */
     const ORBA1_USB = orba.ORBA1_USB;
+    const isGen1Port = p => { const i = p.getInfo(); return i.usbVendorId === ORBA1_USB.vendorId && i.usbProductId === ORBA1_USB.productId; };
     function frameRaw(payload) {                      // raw ArtiComm frame (non-SysEx) for the CDC transport
       return Uint8Array.from(orba.buildCommandRaw(payload, nextMsgId() & 0x7f));
     }
@@ -755,15 +757,16 @@
       ]);
     }
     let gen1Rx = [];                                 // rolling CDC receive buffer (raw bytes)
-    let gen1WriteChain = Promise.resolve();          // serialize transferOut on the shared bulk pipe
-    let gen1ReadGen = 0;                              // per-connection token so a new openSerial always starts a fresh reader (a boolean guard can wedge if the old loop's transferIn is still pending)
+    let gen1Reader = null, gen1Writer = null;         // locked reader/writer on usbDevice.readable / .writable
+    let gen1WriteChain = Promise.resolve();          // serialize writes on the shared serial pipe
+    let gen1ReadGen = 0;                              // per-connection token so a new openSerial always starts a fresh reader (a boolean guard can wedge if the old loop's read() is still pending)
     let gen1LastRx = 0;                                // time of the last frame from the device (disconnect watchdog)
     function sendSerial(payload) {                    // write-only; the read loop consumes acks + GET replies
       if (!usbDevice) return Promise.resolve();
-      const dev = usbDevice, frame = frameRaw(payload);
+      const dev = usbDevice, writer = gen1Writer, frame = frameRaw(payload);
       gen1WriteChain = gen1WriteChain.then(async () => {
         if (usbDevice !== dev) return;
-        try { await dev.transferOut(1, frame); }
+        try { await writer.write(frame); }
         catch (e) { closeSerial(); msg("Orba 1 USB disconnected."); }
       });
       return gen1WriteChain;
@@ -783,24 +786,24 @@
         absorbReadReply(payload);                     // same reply handler as BLE / USB-MIDI
       }
     }
-    async function gen1ReadLoop() {                   // continuously drain the IN endpoint while connected
-      const dev = usbDevice;
+    async function gen1ReadLoop() {                   // continuously drain the serial input while connected
+      const dev = usbDevice, reader = gen1Reader;
       const myGen = ++gen1ReadGen;                    // supersede any prior loop; it exits when it sees it's stale
       while (usbDevice === dev && gen1ReadGen === myGen) {
         let r;
-        try { r = await dev.transferIn(1, 64); }
+        try { r = await reader.read(); }
         catch (e) { break; }                          // device closed / unplugged
-        if (r && r.data && r.data.byteLength) {
-          for (let k = 0; k < r.data.byteLength; k++) gen1Rx.push(r.data.getUint8(k));
+        if (r.done) break;
+        if (r.value && r.value.byteLength) {
+          for (let k = 0; k < r.value.byteLength; k++) gen1Rx.push(r.value[k]);
           gen1ParseRx();
         }
-        if (r && r.status === "stall") { try { await dev.clearHalt("in", 1); } catch (e) { break; } }
       }
-      if (usbDevice === dev && gen1ReadGen === myGen) closeSerial();   // transferIn errored while still "connected" → device gone
+      if (usbDevice === dev && gen1ReadGen === myGen) closeSerial();   // read() errored while still "connected" → device gone
     }
     async function connectSerial() {
-      if (!navigator.usb) { msg("WebUSB needs Chrome (desktop or Android)."); return; }
-      try { await openSerial(await navigator.usb.requestDevice({ filters: [ORBA1_USB] })); }
+      if (!navigator.serial) { msg("Web Serial needs Chrome (desktop)."); return; }
+      try { await openSerial(await navigator.serial.requestPort({ filters: [{ usbVendorId: ORBA1_USB.vendorId, usbProductId: ORBA1_USB.productId }] })); }
       catch (e) { /* user cancelled the picker */ }
     }
     async function refreshGen1() {   // state.gen1 = a gen-1 is in play (CDC-connected, its USB-MIDI port present, or BLE-connected as gen-1)
@@ -811,15 +814,12 @@
       render(); renderSeq();
     }
     async function openSerial(dev) {
-      await dev.open();
-      if (!dev.configuration) await dev.selectConfiguration(1);
-      await dev.claimInterface(2);                   // CDC control
-      await dev.claimInterface(3);                   // CDC data (bulk endpoints)
-      // CDC SET_LINE_CODING 115200 8N1, then SET_CONTROL_LINE_STATE DTR|RTS, so the device talks
-      try { await dev.controlTransferOut({ requestType: "class", recipient: "interface", request: 0x20, value: 0, index: 2 }, new Uint8Array([0x00, 0xc2, 0x01, 0x00, 0x00, 0x00, 0x08])); } catch (e) {}
-      try { await dev.controlTransferOut({ requestType: "class", recipient: "interface", request: 0x22, value: 0x03, index: 2 }); } catch (e) {}
+      await dev.open({ baudRate: 115200 });          // 8N1 is the Web Serial default
+      try { await dev.setSignals({ dataTerminalReady: true, requestToSend: true }); } catch (e) {}   // so the device talks
       gen1Rx = []; gen1WriteChain = Promise.resolve(); gen1LastRx = Date.now();
       usbDevice = dev;
+      gen1Reader = dev.readable.getReader();
+      gen1Writer = dev.writable.getWriter();
       gen1ReadLoop();                                // start draining replies (acks + GET answers) into absorbReadReply
       await loadGen1Data();
       gen1Present = true;
@@ -830,10 +830,16 @@
       readDeviceState();                             // pull key/scale/tempo/instrument names → populate the UI
     }
     function closeSerial() {
-      const d = usbDevice; usbDevice = null; gen1Rx = [];
+      const d = usbDevice, reader = gen1Reader, writer = gen1Writer;
+      usbDevice = null; gen1Rx = []; gen1Reader = null; gen1Writer = null;
       refreshGen1();                                 // usbDevice gone → state.gen1 follows gen1Midi (still gen-1 if its MIDI port remains)
       updateConnUI();                                // a gen-1's lingering MIDI port no longer counts as "connected" → status reflects control
-      if (d) d.close().catch(() => {});              // best-effort close in the background (can hang on a powered-off device)
+      if (d) (async () => {                          // best-effort close in the background (can hang on a powered-off device)
+        try { await reader.cancel(); } catch (e) {}
+        try { reader.releaseLock(); } catch (e) {}
+        try { writer.releaseLock(); } catch (e) {}
+        try { await d.close(); } catch (e) {}
+      })();
     }
     function disconnectGen1() { gen1Present = false; closeSerial(); msg("Orba 1 disconnected."); }
     async function sendAudioEngine(writes) {   // USB CDC takes the whole patch in one raw packet; BLE-MIDI reassembly is small, so chunk
@@ -2536,14 +2542,14 @@
         scheduleFx(kind, pct);
       });
     });
-    if (navigator.usb) {                                       // silently re-attach a previously-granted Orba 1
-      navigator.usb.getDevices().then(ds => {
-        const d = ds.find(x => x.productId === 0x5740 && x.vendorId === 0x0000);
+    if (navigator.serial) {                                    // silently re-attach a previously-granted Orba 1
+      navigator.serial.getPorts().then(ports => {
+        const d = ports.find(isGen1Port);
         if (d && autoConnect) { gen1Present = true; openSerial(d).catch(() => {}); }
       }).catch(() => {});
-      navigator.usb.addEventListener("disconnect", e => { if (e.device === usbDevice) closeSerial(); });
+      navigator.serial.addEventListener("disconnect", e => { if (e.target === usbDevice) closeSerial(); });
     }
-    updateConnUI();                                            // reflect WebUSB availability on load
+    updateConnUI();                                            // reflect Web Serial availability on load
     // tap = select part · long-press (550ms) = solo/un-solo that part
     let pressTimer = null, longFired = false;
     els.parts.addEventListener("pointerdown", e => {
