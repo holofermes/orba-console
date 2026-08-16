@@ -443,6 +443,7 @@
         <h2>MIDI device → part</h2>
         <div id="devList"></div>
       </div>
+      <p class="doio-note" id="mergedNote" style="display:none">USB ports are merged: routing is off, everything plays the Orba's active part. Switch to 4 separate ports to route.</p>
       <h2>Orba device</h2>
       <div class="devrow"><span class="nm">MIDI mode</span>
         <select id="orbaMidiMode">
@@ -1232,6 +1233,11 @@
     // USB port layout is a USB-only capability (the 4 per-voice ports don't exist over BLE);
     // grey the control out on BT so its disabled state IS the "single-part on Bluetooth" cue.
     let autoPorts = localStorage.getItem("orbaAutoPorts") !== "0";   // default ON: keep the Orba's 4 USB ports
+    // 4-port mode is the one that matters: it's what lets an external MIDI device be routed
+    // to a fixed part regardless of the Orba's active one. Known cost on Windows/macOS: those
+    // OSes never expose the cable carrying the Orba's own played notes, so the ghost strip and
+    // self-recording stay blank there (merged mode shows them but kills routing; the device
+    // ignores channels on the merged port and plays its active part). Manual switch in settings.
     function usbControlLive() { return !!usbDevice || (!!usbOut && !gen1Midi && !isBleMidiPort(usbOut)); }   // can read/set the mode
     function usbRoutingLive() { return !!usbDevice || (!!usbOut && !isBleMidiPort(usbOut)); }                // real USB cable → per-part ports exist
     function updateUsbModeUI() {
@@ -1241,7 +1247,9 @@
       els.usbModeSel.disabled = !live;
       els.usbAutoPorts.disabled = !live;
       if (orbaCtx.usbMode === 0 || orbaCtx.usbMode === 1) els.usbModeSel.value = String(orbaCtx.usbMode);
-      els.routeSection.classList.toggle("off", !usbRoutingLive());   // BT is single-part: routing config does nothing
+      const merged = orbaCtx.usbMode === 1;                          // merged port: the device ignores channels and plays its active part
+      els.routeSection.classList.toggle("off", !usbRoutingLive() || merged);   // BT and merged USB are single-part: routing config does nothing
+      document.getElementById("mergedNote").style.display = usbRoutingLive() && merged ? "" : "none";
     }
 
     let pendingPart = null, pendingUntil = 0;   // after a tap, trust the new part; ignore stale poll reads until the device confirms it
@@ -2598,6 +2606,7 @@
       orbaCtx.usbMode = m;
       if (m === 1 && autoPorts) { autoPorts = false; els.usbAutoPorts.checked = false; localStorage.setItem("orbaAutoPorts", "0"); }   // merged overrides auto-set
       msg(m === 0 ? "Orba: 4 separate USB ports" : "Orba: 1 merged USB port");
+      updateUsbModeUI();
     });
     connOverlay.addEventListener("click", e => { if (e.target === connOverlay) connOverlay.classList.remove("open"); });
     document.querySelectorAll("input[data-fx]").forEach(s => {   // dragging a slider sends the FX (was macropad-only)
