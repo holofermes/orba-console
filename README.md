@@ -61,6 +61,10 @@ Open it in a Chromium browser.
 - A piano-roll note editor with snap, marquee select, and undo
 - An optional key-mapping layer for a hardware controller
 
+On Windows and macOS the Orba's own playing isn't visible to the browser in 4-port USB mode
+(the OS hides that MIDI cable), so the ghost strips and looper won't capture it there.
+Switching USB ports to "merged" in settings shows it, at the cost of per-part controller routing.
+
 ## Built on
 
 The protocol is its own project: [orba-protocol](https://github.com/holofermes/orba-protocol),
