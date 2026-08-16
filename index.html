@@ -2509,7 +2509,7 @@
       refreshGen1();                                        // gen-1 MIDI port ↔ gen-1 UI/library
       updateConnUI();
       if (usbAppeared) {                                    // a gen-1's MIDI port carries notes only — control needs CDC (Connect → Wired)
-        if (gen1Midi) msg("Orba 1 detected — tap Connect for USB control");
+        if (gen1Midi) { if (!usbDevice) msg("Orba 1 detected — tap Connect for USB control"); }   // suppress when control is already up (MIDI port can reappear late)
         else { msg("Orba connected (USB)"); readDeviceState(); }
       }
     }
@@ -2615,6 +2615,11 @@
     })();
     if (navigator.serial) navigator.serial.addEventListener("disconnect", e => { if (e.target === usbDevice) closeSerial(); });
     if (navigator.usb) navigator.usb.addEventListener("disconnect", e => { if (e.device === usbDevice) closeSerial(); });
+    // a USB-mode change makes the device re-enumerate: it drops off the bus and returns ~2s
+    // later. The grant survives, and connect events only fire for granted devices — re-open
+    // so a mode flip (or replug) doesn't strand the app at "Connect".
+    if (navigator.serial) navigator.serial.addEventListener("connect", e => { if (autoConnect && !usbDevice && isGen1Port(e.target)) openSerial(e.target).catch(() => {}); });
+    if (navigator.usb) navigator.usb.addEventListener("connect", e => { if (autoConnect && !usbDevice && isGen1Dev(e.device)) openUsb(e.device).catch(() => {}); });
     updateConnUI();                                            // reflect transport availability on load
     // tap = select part · long-press (550ms) = solo/un-solo that part
     let pressTimer = null, longFired = false;
