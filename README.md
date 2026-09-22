@@ -9,7 +9,7 @@ piano-roll note editor.
 
 **Live:** https://holofermes.github.io/orba-console/
 
-Open it in a Chromium browser.
+The web app works with any Chromium browser on Linux, Windows, and Android. It should work on macOS, and does not really work on iOS.
 
 ## Screenshots
 
